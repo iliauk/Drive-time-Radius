@@ -9,12 +9,13 @@
 <script type="text/javascript">
 	//Ilia Karmanov written for Google Maps API v3
     //Originally from V2: http://sandropaganotti.com/generate-an-isochrone-map-using-google-maps-api/
+	//Ilia Karmanov written for Google Maps API v3
 	
 	// Sensitivity
     var inc_x = 0.005;
     var inc_y = 0.005;
 	// Number of points
-	var num_points = 15;
+	var num_points = 10;
 	// Initialize
 	var my_lat = 51.518175;
 	var my_lng = -0.129064;
@@ -22,7 +23,7 @@
     var geocoder = null;
 	var directionsDisplay = new google.maps.DirectionsRenderer();
 	var directionsService = new google.maps.DirectionsService();
-
+	
     var x     = 0.001;
     var y     = 0.001;
     var m     = 0;
@@ -41,27 +42,19 @@
 		};
 		map = new google.maps.Map(document.getElementById('map-canvas'),
 		mapOptions);
-		
-		geocoder = new google.maps.Geocoder();	
-		directionsDisplay.setMap(map);	
     }
 
-	function isocrona(address,minutes){
+	function isocrona(address,minutes){		
+		geocoder = new google.maps.Geocoder();	
+		directionsDisplay.setMap(map);	
 		geocoder.geocode( { 'address': address}, function(point, status) {
+		
 		if (status == google.maps.GeocoderStatus.OK) {
 			var source_lat = point[0].geometry.location.lat()
 			var source_lng =point[0].geometry.location.lng()
 			map.setCenter(point[0].geometry.location);
 			prev_dest = point;
 			$('#loader').show();
-			//Set a start marker:
-			console.log("Setting start marker" + point[0].geometry.location)
-			var start_marker = new google.maps.Marker({
-					position: new google.maps.LatLng(source_lat,source_lng),
-					map: map,
-					icon: 'http://maps.google.com/mapfiles/ms/icons/green-dot.png',
-					title: 'Start'
-				});	
 			intval = setInterval( "crawlpoint(" + point[0].geometry.location.lat() + "," + 
 			point[0].geometry.location.lng() + "," + minutes +")", 3000);
 		} else {
@@ -84,7 +77,7 @@
         x = x + (inc_x * Math.sin(start_s));
         y = y + (inc_y * Math.cos(start_s));
         m = m + 1;
-        		
+		
 		directionsService.route(request,function(response, status) {
 		if (status == google.maps.DirectionsStatus.OK) {
 			console.log("Route OK. Try: " + m)
@@ -94,12 +87,19 @@
 			directionsDisplay.setDirections(response)
 			
 			var curr_meas = (response.routes[0].legs[0].duration.value)/60
+			var start_dir_lat = response.routes[0].legs[0].start_location.lat()
+			var start_dir_lng = response.routes[0].legs[0].start_location.lng()
+			var end_dir_lat = response.routes[0].legs[0].end_location.lat()
+			var end_dir_lng = response.routes[0].legs[0].end_location.lng()
 			//output for debug
 			console.log("Current min: " + curr_meas + ", prev min: " + prev_meas + ", target: " + mins)
+			
 			if (prev_meas <= mins && curr_meas > mins){
 				console.log("Found! " + curr_meas + ". Placing marker")
 				var marker = new google.maps.Marker({
-					position: new google.maps.LatLng(prev_dest.x,prev_dest.y),
+					//position: new google.maps.LatLng(prev_dest.x,prev_dest.y),
+					//use directions end and start
+					position: new google.maps.LatLng(end_dir_lat,end_dir_lng),
 					map: map,
 					icon: 'https://maps.gstatic.com/intl/en_us/mapfiles/markers2/measle_blue.png',
 					title: 'Minutes: ' + (response.routes[0].legs[0].duration.value/60).toFixed(2) + 
@@ -110,11 +110,8 @@
                 prev_dest = destpoint;
                 prev_meas = curr_meas;
             }
-            // Check to see if the number of minutes has been passed by more than 40%
-			//	and the number of checks has surpassed 50
-            //if(curr_meas > (mins + (mins * 0.4)) || (m > 20 && found ==1) || m > 50){
 			if(curr_meas > (mins + (mins * 0.4)) || (found ==1) || m > 50){
-                points.push(new google.maps.LatLng(prev_dest.x, prev_dest.y));
+                points.push(new google.maps.LatLng(end_dir_lat,end_dir_lng));
                 start_s = start_s + slice;
                 x = inc_x;
                 y = inc_y;
@@ -135,6 +132,14 @@
                       fillOpacity: 0.2
 					});
 					polygon.setMap(map);
+					//Set a start marker:
+					console.log("Setting start marker")
+					var start_marker = new google.maps.Marker({
+					position: new google.maps.LatLng(start_dir_lat,start_dir_lng),
+					map: map,
+					icon: 'http://maps.google.com/mapfiles/ms/icons/green-dot.png',
+					title: 'Start'
+				});	
 					// Clear directions
 					directionsDisplay.setMap();
                     $('#loader').hide();
@@ -142,10 +147,9 @@
                 }
             }                 
         }else{
-			//no routes were returned
-			console.log("No routes returned")
+			console.log("No routes returned, try: " + m + ", fail: " + fail)
             document.getElementById('txt1').value = 'n' + document.getElementById('txt1').value
-        }
+			}
 		});
     }
 	
