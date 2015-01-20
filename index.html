@@ -11,10 +11,10 @@
 	//Ilia Karmanov written for Google Maps API v3
 	
 	// Sensitivity
-    var inc_x = 0.005;
-    var inc_y = 0.005;
+    var inc_x = 0.01;
+    var inc_y = 0.01;
 	// Number of points
-	var num_points = 10;
+	var num_points = 20;
 	// Initialize
 	var my_lat = 51.518175;
 	var my_lng = -0.129064;
@@ -22,14 +22,15 @@
     var geocoder = null;
 	var directionsDisplay = new google.maps.DirectionsRenderer();
 	var directionsService = new google.maps.DirectionsService();
-	
-    var x     = 0.001;
-    var y     = 0.001;
+    var x     = 0.01;
+    var y     = 0.01;
     var m     = 0;
     var intval = null;
     var slice  = (2*Math.PI)/num_points; 
     var start_s = 0;
     var prev_meas = 0;
+	var prev_dest_lat = 0;
+	var prev_dest_lng = 0;
     var prev_dest = null;
     var points    = new Array();
     var found     = 0;
@@ -67,6 +68,8 @@
         var destpoint  = new google.maps.Point(px + x,py + y);  
 		var start = new google.maps.LatLng(point.x,point.y);
 		var end = new google.maps.LatLng(destpoint.x,destpoint.y);
+		//rewrite so that instead of incrementing px and py continuously; it adds onto
+		//last directions variable
 		var request = {
 			origin: start,
 			destination: end,
@@ -85,32 +88,35 @@
 			directionsDisplay.setOptions({ preserveViewport: true })
 			directionsDisplay.setDirections(response)
 			
-			var curr_meas = (response.routes[0].legs[0].duration.value)/60
+			var curr_meas = (response.routes[0].legs[0].duration.value/60).toFixed(2)
 			var start_dir_lat = response.routes[0].legs[0].start_location.lat()
 			var start_dir_lng = response.routes[0].legs[0].start_location.lng()
 			var end_dir_lat = response.routes[0].legs[0].end_location.lat()
 			var end_dir_lng = response.routes[0].legs[0].end_location.lng()
 			//output for debug
-			console.log("Current min: " + curr_meas + ", prev min: " + prev_meas + ", target: " + mins)
-			
+			console.log("Current min: " + curr_meas + ", prev min: " + prev_meas + ", target: " + mins)	
 			if (prev_meas <= mins && curr_meas > mins){
 				console.log("Found! " + curr_meas + ". Placing marker")
 				var marker = new google.maps.Marker({
 					//position: new google.maps.LatLng(prev_dest.x,prev_dest.y),
 					//use directions end and start
-					position: new google.maps.LatLng(end_dir_lat,end_dir_lng),
+					position: new google.maps.LatLng(prev_dest_lat,prev_dest_lng),
 					map: map,
 					icon: 'https://maps.gstatic.com/intl/en_us/mapfiles/markers2/measle_blue.png',
-					title: 'Minutes: ' + (response.routes[0].legs[0].duration.value/60).toFixed(2) + 
-					' Miles: ' + (response.routes[0].legs[0].distance.value/1000/1.609344).toFixed(2)
+					title: 'Minutes: ' + old_time + 
+					' Miles: ' + old_dist
 				});
                 found     = 1;
             }else{
                 prev_dest = destpoint;
+				prev_dest_lat = end_dir_lat
+				prev_dest_lng = end_dir_lng
                 prev_meas = curr_meas;
+				old_dist = (response.routes[0].legs[0].distance.value/1000/1.609344).toFixed(2)
+				old_time = (response.routes[0].legs[0].duration.value/60).toFixed(2)
             }
 			if(curr_meas > (mins + (mins * 0.4)) || (found ==1) || m > 50){
-                points.push(new google.maps.LatLng(end_dir_lat,end_dir_lng));
+                points.push(new google.maps.LatLng(prev_dest_lat,prev_dest_lng));
                 start_s = start_s + slice;
                 x = inc_x;
                 y = inc_y;
