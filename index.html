@@ -1,0 +1,173 @@
+<html>
+<head>
+<meta name="viewport" content="initial-scale=1.0, user-scalable=no" />
+<meta http-equiv="content-type" content="text/html; charset=UTF-8"/>
+<title>Generate an isochrone with Google Map API</title>
+<script type="text/javascript" src="https://maps.googleapis.com/maps/api/js?&sensor=false"></script>
+<script src="jquery.js" type="text/javascript"></script>
+
+<script type="text/javascript">
+	//Ilia Karmanov written for Google Maps API v3
+    //Originally from V2: http://sandropaganotti.com/generate-an-isochrone-map-using-google-maps-api/
+	
+	// Sensitivity
+    var inc_x = 0.005;
+    var inc_y = 0.005;
+	// Number of points
+	var num_points = 15;
+	// Initialize
+	var my_lat = 51.518175;
+	var my_lng = -0.129064;
+	var map = null;
+    var geocoder = null;
+	var directionsDisplay = new google.maps.DirectionsRenderer();
+	var directionsService = new google.maps.DirectionsService();
+
+    var x     = 0.001;
+    var y     = 0.001;
+    var m     = 0;
+    var intval = null;
+    var slice  = (2*Math.PI)/num_points; 
+    var start_s = 0;
+    var prev_meas = 0;
+    var prev_dest = null;
+    var points    = new Array();
+    var found     = 0;
+
+    function initialize() {	
+		var mapOptions = {
+			center: new google.maps.LatLng(my_lat, my_lng),
+			zoom: 13
+		};
+		map = new google.maps.Map(document.getElementById('map-canvas'),
+		mapOptions);
+		
+		geocoder = new google.maps.Geocoder();	
+		directionsDisplay.setMap(map);	
+    }
+
+	function isocrona(address,minutes){
+		geocoder.geocode( { 'address': address}, function(point, status) {
+		if (status == google.maps.GeocoderStatus.OK) {
+			var source_lat = point[0].geometry.location.lat()
+			var source_lng =point[0].geometry.location.lng()
+			map.setCenter(point[0].geometry.location);
+			prev_dest = point;
+			$('#loader').show();
+			//Set a start marker:
+			console.log("Setting start marker" + point[0].geometry.location)
+			var start_marker = new google.maps.Marker({
+					position: new google.maps.LatLng(source_lat,source_lng),
+					map: map,
+					icon: 'http://maps.google.com/mapfiles/ms/icons/green-dot.png',
+					title: 'Start'
+				});	
+			intval = setInterval( "crawlpoint(" + point[0].geometry.location.lat() + "," + 
+			point[0].geometry.location.lng() + "," + minutes +")", 3000);
+		} else {
+			alert("Geocode was not successful for the following reason: " + status);
+		}
+	});
+	}
+	
+    function crawlpoint(px,py,mins){
+        var point      = new google.maps.Point(px,py);
+        var destpoint  = new google.maps.Point(px + x,py + y);  
+		var start = new google.maps.LatLng(point.x,point.y);
+		var end = new google.maps.LatLng(destpoint.x,destpoint.y);
+		var request = {
+			origin: start,
+			destination: end,
+			travelMode: google.maps.TravelMode.DRIVING
+		};
+		
+        x = x + (inc_x * Math.sin(start_s));
+        y = y + (inc_y * Math.cos(start_s));
+        m = m + 1;
+        		
+		directionsService.route(request,function(response, status) {
+		if (status == google.maps.DirectionsStatus.OK) {
+			console.log("Route OK. Try: " + m)
+            document.getElementById('txt1').value = 'y' + document.getElementById('txt1').value 
+			
+			directionsDisplay.setOptions({ preserveViewport: true })
+			directionsDisplay.setDirections(response)
+			
+			var curr_meas = (response.routes[0].legs[0].duration.value)/60
+			//output for debug
+			console.log("Current min: " + curr_meas + ", prev min: " + prev_meas + ", target: " + mins)
+			if (prev_meas <= mins && curr_meas > mins){
+				console.log("Found! " + curr_meas + ". Placing marker")
+				var marker = new google.maps.Marker({
+					position: new google.maps.LatLng(prev_dest.x,prev_dest.y),
+					map: map,
+					icon: 'https://maps.gstatic.com/intl/en_us/mapfiles/markers2/measle_blue.png',
+					title: 'Minutes: ' + (response.routes[0].legs[0].duration.value/60).toFixed(2) + 
+					' Miles: ' + (response.routes[0].legs[0].distance.value/1000/1.609344).toFixed(2)
+				});
+                found     = 1;
+            }else{
+                prev_dest = destpoint;
+                prev_meas = curr_meas;
+            }
+            // Check to see if the number of minutes has been passed by more than 40%
+			//	and the number of checks has surpassed 50
+            //if(curr_meas > (mins + (mins * 0.4)) || (m > 20 && found ==1) || m > 50){
+			if(curr_meas > (mins + (mins * 0.4)) || (found ==1) || m > 50){
+                points.push(new google.maps.LatLng(prev_dest.x, prev_dest.y));
+                start_s = start_s + slice;
+                x = inc_x;
+                y = inc_y;
+                m = 0;
+                found = 0;
+                prev_meas = 0;
+                curr_meas = 0;
+                prev_dest = point;
+				console.log("Done!")
+                if(start_s >= (2*Math.PI)){
+					console.log("End. Creating Polygon.")
+                    start_s = 0;
+					// Add polygon
+					var polygon = new google.maps.Polygon({
+                      paths: points,
+                      strokeColor: '#0040FF',
+                      fillColor: '#00BFFF',
+                      fillOpacity: 0.2
+					});
+					polygon.setMap(map);
+					// Clear directions
+					directionsDisplay.setMap();
+                    $('#loader').hide();
+                    clearInterval(intval);
+                }
+            }                 
+        }else{
+			//no routes were returned
+			console.log("No routes returned")
+            document.getElementById('txt1').value = 'n' + document.getElementById('txt1').value
+        }
+		});
+    }
+	
+</script>
+</head>
+<body style="margin:0px; padding:0px; background: #DDDDDD;" onload="initialize()">
+  <center>
+      <div style="padding-top: 4px; padding-bottom: 4px;">
+          <label for="geolocation"/>Location:   </label>
+          <input type="text" id="geolocation" name="geolocation" size="60" value="Hyde Park, London"/>
+          <label for="minutes">     Minutes:    </label>
+          <input type="text" id="minutes" name="minutes" size="3" maxlength="2" value="10"/>
+          <input type="submit" value="Generate Isochrone"
+                 onclick="this.value='Generating';isocrona(document.getElementById('geolocation').value,document.getElementById('minutes').value)"/>
+          <img id="loader" src="loader.gif" style="display:none;"/>
+     </div>
+     <div id="map-canvas" style="width:70%; height:800px; border: 3px solid rgb(51, 51, 51);"></div>
+     <div style="padding-top: 10px;">
+         Specify a location and a driving time in minutes.
+     </div>
+  </center>
+  <textarea id="txt1" style="display:none;"></textarea>
+  <div id="map-text" style="width:30%; height:800px; float: left; display:none;"></div>
+</body>
+</html>
