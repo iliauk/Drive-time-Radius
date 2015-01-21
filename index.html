@@ -11,8 +11,8 @@
 	//Ilia Karmanov written for Google Maps API v3
 	
 	// Sensitivity
-    var inc_x = 0.01;
-    var inc_y = 0.01;
+    var inc_x = 0.005;
+    var inc_y = 0.005;
 	// Number of points
 	var num_points = 20;
 	// Initialize
@@ -22,8 +22,8 @@
     var geocoder = null;
 	var directionsDisplay = new google.maps.DirectionsRenderer();
 	var directionsService = new google.maps.DirectionsService();
-    var x     = 0.01;
-    var y     = 0.01;
+    var x     = 0.005;
+    var y     = 0.005;
     var m     = 0;
     var intval = null;
     var slice  = (2*Math.PI)/num_points; 
@@ -31,7 +31,8 @@
     var prev_meas = 0;
 	var prev_dest_lat = 0;
 	var prev_dest_lng = 0;
-    var prev_dest = null;
+	var old_dist = 0;
+	var old_time = 0;
     var points    = new Array();
     var found     = 0;
 
@@ -53,7 +54,6 @@
 			var source_lat = point[0].geometry.location.lat()
 			var source_lng =point[0].geometry.location.lng()
 			map.setCenter(point[0].geometry.location);
-			prev_dest = point;
 			$('#loader').show();
 			intval = setInterval( "crawlpoint(" + point[0].geometry.location.lat() + "," + 
 			point[0].geometry.location.lng() + "," + minutes +")", 3000);
@@ -68,8 +68,7 @@
         var destpoint  = new google.maps.Point(px + x,py + y);  
 		var start = new google.maps.LatLng(point.x,point.y);
 		var end = new google.maps.LatLng(destpoint.x,destpoint.y);
-		//rewrite so that instead of incrementing px and py continuously; it adds onto
-		//last directions variable
+
 		var request = {
 			origin: start,
 			destination: end,
@@ -95,11 +94,10 @@
 			var end_dir_lng = response.routes[0].legs[0].end_location.lng()
 			//output for debug
 			console.log("Current min: " + curr_meas + ", prev min: " + prev_meas + ", target: " + mins)	
+			
 			if (prev_meas <= mins && curr_meas > mins){
 				console.log("Found! " + curr_meas + ". Placing marker")
 				var marker = new google.maps.Marker({
-					//position: new google.maps.LatLng(prev_dest.x,prev_dest.y),
-					//use directions end and start
 					position: new google.maps.LatLng(prev_dest_lat,prev_dest_lng),
 					map: map,
 					icon: 'https://maps.gstatic.com/intl/en_us/mapfiles/markers2/measle_blue.png',
@@ -108,7 +106,6 @@
 				});
                 found     = 1;
             }else{
-                prev_dest = destpoint;
 				prev_dest_lat = end_dir_lat
 				prev_dest_lng = end_dir_lng
                 prev_meas = curr_meas;
@@ -124,7 +121,10 @@
                 found = 0;
                 prev_meas = 0;
                 curr_meas = 0;
-                prev_dest = point;
+				old_dist = 0;
+				old_time = 0;
+				prev_dest_lng = 0;
+				prev_dest_lat = 0;
 				console.log("Done!")
                 if(start_s >= (2*Math.PI)){
 					console.log("End. Creating Polygon.")
