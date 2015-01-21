@@ -12,11 +12,11 @@
 	// Stable Version
 	
 	// Sensitivity (increment)
-    var inc_x = 0.01;
-    var inc_y = 0.01;
+    var inc_x = 0.005;
+    var inc_y = 0.005;
 	// Initial jump
-	var x     = 0.01;
-    var y     = 0.01;
+	var x     = 0.005;
+    var y     = 0.005;
 	// Number of points
 	var num_points = 20;
 	// Initialize around City, London
@@ -77,10 +77,10 @@
 		// Should help stay on path
 		// Try:
 		if (m > 1) {
-		end = new google.maps.LatLng(prev_dest_lat + (inc_x/5 * Math.sin(start_s)),
-			prev_dest_lng + (inc_y/5 * Math.cos(start_s)));
-		console.log("Switching to direction route: " + prev_dest_lat + (inc_x/5 * Math.sin(start_s)) + ", " +
-			prev_dest_lng + (inc_y/5 * Math.cos(start_s)))
+		end = new google.maps.LatLng(prev_dest_lat + (inc_x * Math.sin(start_s)),
+			prev_dest_lng + (inc_y * Math.cos(start_s)));
+		console.log("Switching to direction route: " + prev_dest_lat + (inc_x * Math.sin(start_s)) + ", " +
+			prev_dest_lng + (inc_y * Math.cos(start_s)))
 		}
 		//
 		var request = {
