@@ -123,8 +123,16 @@
                 found     = 1;
             }else{
 				// Set current end coordinates as previous
-				prev_dest_lat = end_dir_lat
-				prev_dest_lng = end_dir_lng
+				// If stuck, push forward:
+				if (end_dir_lat == prev_dest_lat & end_dir_lng == prev_dest_lng ){
+					console.log("Stuck, pushing forward")
+					prev_dest_lat = end_dir_lat + (inc_x * Math.cos(start_s))
+					prev_dest_lng = end_dir_lng + (inc_y * Math.cos(start_s))
+				}else{
+					// Set current end coordinates as previous
+					prev_dest_lat = end_dir_lat
+					prev_dest_lng = end_dir_lng
+				}
                 prev_meas = curr_meas;
 				// Set current distance and time as previous
 				old_dist = (response.routes[0].legs[0].distance.value/1000/1.609344).toFixed(2)
@@ -147,6 +155,8 @@
 				old_time = 0;
 				prev_dest_lng = 0;
 				prev_dest_lat = 0;
+				end_dir_lat = 0;
+				end_dir_lng = 0;
 				console.log("Done!")
 				// Finished all slices
                 if(start_s >= (2*Math.PI)){
