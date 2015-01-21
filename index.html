@@ -15,7 +15,7 @@
     var inc_y = 0.005;
 	// Number of points
 	var num_points = 20;
-	// Initialize
+	// Initialize around City, London
 	var my_lat = 51.518175;
 	var my_lng = -0.129064;
 	var map = null;
@@ -28,13 +28,14 @@
     var intval = null;
     var slice  = (2*Math.PI)/num_points; 
     var start_s = 0;
+	var points    = new Array();
+    var found     = 0;
+	// Save previous results
     var prev_meas = 0;
 	var prev_dest_lat = 0;
 	var prev_dest_lng = 0;
 	var old_dist = 0;
 	var old_time = 0;
-    var points    = new Array();
-    var found     = 0;
 
     function initialize() {	
 		var mapOptions = {
@@ -45,7 +46,8 @@
 		mapOptions);
     }
 
-	function isocrona(address,minutes){		
+	function isocrona(address,minutes){	
+		// Initialise geocoder and directions
 		geocoder = new google.maps.Geocoder();	
 		directionsDisplay.setMap(map);	
 		geocoder.geocode( { 'address': address}, function(point, status) {
@@ -54,7 +56,7 @@
 			var source_lat = point[0].geometry.location.lat()
 			var source_lng =point[0].geometry.location.lng()
 			map.setCenter(point[0].geometry.location);
-			$('#loader').show();
+			//$('#loader').show();
 			intval = setInterval( "crawlpoint(" + point[0].geometry.location.lat() + "," + 
 			point[0].geometry.location.lng() + "," + minutes +")", 3000);
 		} else {
@@ -68,7 +70,7 @@
         var destpoint  = new google.maps.Point(px + x,py + y);  
 		var start = new google.maps.LatLng(point.x,point.y);
 		var end = new google.maps.LatLng(destpoint.x,destpoint.y);
-
+		// From start to start + delta
 		var request = {
 			origin: start,
 			destination: end,
@@ -77,46 +79,55 @@
 		
         x = x + (inc_x * Math.sin(start_s));
         y = y + (inc_y * Math.cos(start_s));
+		// Try++
         m = m + 1;
 		
 		directionsService.route(request,function(response, status) {
 		if (status == google.maps.DirectionsStatus.OK) {
 			console.log("Route OK. Try: " + m)
             document.getElementById('txt1').value = 'y' + document.getElementById('txt1').value 
-			
+			// Display directions on screen
 			directionsDisplay.setOptions({ preserveViewport: true })
 			directionsDisplay.setDirections(response)
 			
 			var curr_meas = (response.routes[0].legs[0].duration.value/60).toFixed(2)
-			var start_dir_lat = response.routes[0].legs[0].start_location.lat()
-			var start_dir_lng = response.routes[0].legs[0].start_location.lng()
+			var start_dir_lat = 
+			var start_dir_lng = 
 			var end_dir_lat = response.routes[0].legs[0].end_location.lat()
 			var end_dir_lng = response.routes[0].legs[0].end_location.lng()
-			//output for debug
+			// Output for debug
 			console.log("Current min: " + curr_meas + ", prev min: " + prev_meas + ", target: " + mins)	
-			
+			// If now over target and before, under target then
 			if (prev_meas <= mins && curr_meas > mins){
 				console.log("Found! " + curr_meas + ". Placing marker")
 				var marker = new google.maps.Marker({
+					// Use previous directions service coordinates (not geocoded)
 					position: new google.maps.LatLng(prev_dest_lat,prev_dest_lng),
 					map: map,
+					// Small icon
 					icon: 'https://maps.gstatic.com/intl/en_us/mapfiles/markers2/measle_blue.png',
+					// Use previous distance and time
 					title: 'Minutes: ' + old_time + 
 					' Miles: ' + old_dist
 				});
                 found     = 1;
             }else{
+				// Set current end coordinates as previous
 				prev_dest_lat = end_dir_lat
 				prev_dest_lng = end_dir_lng
                 prev_meas = curr_meas;
+				// Set current distance and time as previous
 				old_dist = (response.routes[0].legs[0].distance.value/1000/1.609344).toFixed(2)
 				old_time = (response.routes[0].legs[0].duration.value/60).toFixed(2)
             }
 			if(curr_meas > (mins + (mins * 0.4)) || (found ==1) || m > 50){
+				// Push previous directions coordinates to polygon array
                 points.push(new google.maps.LatLng(prev_dest_lat,prev_dest_lng));
+				// Next slice
                 start_s = start_s + slice;
                 x = inc_x;
                 y = inc_y;
+				// Reset variables
                 m = 0;
                 found = 0;
                 prev_meas = 0;
@@ -126,10 +137,11 @@
 				prev_dest_lng = 0;
 				prev_dest_lat = 0;
 				console.log("Done!")
+				// Finished all slices
                 if(start_s >= (2*Math.PI)){
 					console.log("End. Creating Polygon.")
                     start_s = 0;
-					// Add polygon
+					// Add polygon to join the points
 					var polygon = new google.maps.Polygon({
                       paths: points,
                       strokeColor: '#0040FF',
@@ -137,17 +149,19 @@
                       fillOpacity: 0.2
 					});
 					polygon.setMap(map);
-					//Set a start marker:
+					// Set a start marker:
 					console.log("Setting start marker")
 					var start_marker = new google.maps.Marker({
-					position: new google.maps.LatLng(start_dir_lat,start_dir_lng),
+					// Use point that directions service was using for accuracy
+					position: new google.maps.LatLng(response.routes[0].legs[0].start_location.lat(),
+						response.routes[0].legs[0].start_location.lng()),
 					map: map,
 					icon: 'http://maps.google.com/mapfiles/ms/icons/green-dot.png',
 					title: 'Start'
 				});	
 					// Clear directions
 					directionsDisplay.setMap();
-                    $('#loader').hide();
+                    //$('#loader').hide();
                     clearInterval(intval);
                 }
             }                 
