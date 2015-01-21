@@ -7,9 +7,9 @@
 <script src="jquery.js" type="text/javascript"></script>
 
 <script type="text/javascript">
-    //Originally from: http://sandropaganotti.com/generate-an-isochrone-map-using-google-maps-api/
-	//Rewritten for Google Maps API v3 - Ilia Karmanov 
-	//Stable Version
+    // Originally from: http://sandropaganotti.com/generate-an-isochrone-map-using-google-maps-api/
+	// Rewritten for Google Maps API v3 - Ilia Karmanov 
+	// Stable Version
 	
 	// Sensitivity (increment)
     var inc_x = 0.005;
@@ -77,6 +77,7 @@
 		// Should help stay on path
 		// Try:
 		if (m > 2) {
+		// Can jump along a bit faster
 		end = new google.maps.LatLng(prev_dest_lat + (0.01 * Math.sin(start_s)),
 			prev_dest_lng + (0.01 * Math.cos(start_s)));
 		console.log("Switching to direction route: " + prev_dest_lat + (0.01 * Math.sin(start_s)) + ", " +
