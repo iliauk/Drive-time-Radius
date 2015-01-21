@@ -18,7 +18,7 @@
 	var x     = 0.005;
     var y     = 0.005;
 	// Number of points
-	var num_points = 25;
+	var num_points = 15;
 	// Initialize around City, London
 	var my_lat = 51.518175;
 	var my_lng = -0.129064;
@@ -122,22 +122,16 @@
 				});
                 found     = 1;
             }else{
-				// If stuck, push forward:
-				if (end_dir_lat == prev_dest_lat & end_dir_lng == prev_dest_lng ){
-					prev_dest_lat = end_dir_lat + (inc_x * Math.cos(start_s))
-					prev_dest_lng = end_dir_lng + (inc_y * Math.cos(start_s))
-				}else{
-					// Set current end coordinates as previous
-					prev_dest_lat = end_dir_lat
-					prev_dest_lng = end_dir_lng
-				}
+				// Set current end coordinates as previous
+				prev_dest_lat = end_dir_lat
+				prev_dest_lng = end_dir_lng
                 prev_meas = curr_meas;
 				// Set current distance and time as previous
 				old_dist = (response.routes[0].legs[0].distance.value/1000/1.609344).toFixed(2)
 				old_time = (response.routes[0].legs[0].duration.value/60).toFixed(2)
             }
 			// Max tries depends on minutes (will be longer with longer routes)
-			if(curr_meas > (mins + (mins * 0.4)) || (found ==1) || m > (mins*5)){
+			if(curr_meas > (mins + (mins * 0.4)) || (found ==1) || m > 50){
 				// Push previous directions coordinates to polygon array
                 points.push(new google.maps.LatLng(prev_dest_lat,prev_dest_lng));
 				// Next slice
@@ -184,6 +178,9 @@
             }                 
         }else{
 			console.log("No routes returned, try: " + m)
+			//Get past stuck point
+			prev_dest_lat = prev_dest_lat + (inc_x * Math.cos(start_s))
+			prev_dest_lng = prev_dest_lng + (inc_y * Math.cos(start_s))
             document.getElementById('txt1').value = 'n' + document.getElementById('txt1').value
 			}
 		});
