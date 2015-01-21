@@ -76,7 +76,7 @@
 		// After initial push; follow directions service rather than ray 
 		// Should help stay on path
 		// Try:
-		if (m > 3) {
+		if (m > 2) {
 		end = new google.maps.LatLng(prev_dest_lat + (0.01 * Math.sin(start_s)),
 			prev_dest_lng + (0.01 * Math.cos(start_s)));
 		console.log("Switching to direction route: " + prev_dest_lat + (0.01 * Math.sin(start_s)) + ", " +
