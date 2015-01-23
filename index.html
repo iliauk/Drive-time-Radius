@@ -19,7 +19,7 @@
 	var x     = 0;
     var y     = 0;
 	// Number of points
-	var num_points = 30;
+	var num_points = 25;
 	// Stuck
 	var stuck = 0;
 	var stuck_old = 0;
@@ -191,8 +191,13 @@
 				});
 				polygon.setMap(map);
 				
-				// Next slice
-                start_s = start_s + slice;
+				if (stuck > 3 ) {
+					// Push out a bit further
+					start_s = start_s + (2*slice)
+				} else {
+					// Next slice
+					start_s = start_s + slice;
+				}
 				// Reset variables		
 				inc_x = default_int;
 				inc_y = default_int;
@@ -220,7 +225,7 @@
             //document.getElementById('txt1').value = 'n' + document.getElementById('txt1').value
 			no_route = no_route + 1;
 			
-			if (no_route > 3) {
+			if (no_route > 5) {
 				console.log("No route. Skipping.")
 				// Next slice
 				start_s = start_s + slice;
@@ -247,16 +252,14 @@
 				console.log("End. Creating Polygon.")
                 start_s = 0;
 
-				// Set a start marker:
-				console.log("Setting start marker")
 				var start_marker = new google.maps.Marker({
 				// Use point that directions service was using for accuracy
-				position: new google.maps.LatLng(start_lat, start_lng),
+				position: new google.maps.LatLng(response.routes[0].legs[0].start_location.lat(),
+					response.routes[0].legs[0].start_location.lng()),
 				map: map,
 				icon: 'http://maps.google.com/mapfiles/ms/icons/green-dot.png',
 				title: 'Start'
 				});	
-				
 		// Clear directions
 		directionsDisplay.setMap();
         //$('#loader').hide();
