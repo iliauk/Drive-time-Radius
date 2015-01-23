@@ -184,7 +184,9 @@
 				polygon = new google.maps.Polygon({
                       paths: points,
                       strokeColor: '#0040FF',
-                      fillColor: '#00BFFF',
+					  //Yellow
+					  fillColor: '#FFCC00',
+                      //fillColor: '#00BFFF',
                       fillOpacity: 0.2
 					  //editable: true
 				});
@@ -252,12 +254,25 @@
 
 				var start_marker = new google.maps.Marker({
 				// Use point that directions service was using for accuracy
-				position: new google.maps.LatLng(response.routes[0].legs[0].start_location.lat(),
-					response.routes[0].legs[0].start_location.lng()),
+				position: new google.maps.LatLng(start_lat,
+					start_lng),
 				map: map,
 				icon: 'http://maps.google.com/mapfiles/ms/icons/green-dot.png',
 				title: 'Start'
 				});	
+				
+				polygon.setMap(null);
+				polygon = new google.maps.Polygon({
+                      paths: points,
+                      strokeColor: '#0040FF',
+					  //Yellow
+					  //fillColor: '#FFCC00',
+                      fillColor: '#00BFFF',
+                      fillOpacity: 0.2
+					  //editable: true
+				});
+				polygon.setMap(map);
+				
 		// Clear directions
 		directionsDisplay.setMap();
         //$('#loader').hide();
