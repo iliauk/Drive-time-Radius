@@ -144,7 +144,7 @@
 				}
 				// Set current end coordinates as previous
 				// If stuck, push forward:
-				if (curr_time == old_time && curr_dist == old_dist) {	
+				if (curr_time.toFixed(1) == old_time.toFixed(1) && curr_dist.toFixed(1) == old_dist.toFixed(1)) {	
 					console.log("Stuck, pushing forward")
 					stuck_old = stuck
 					stuck = stuck + 1
@@ -251,7 +251,7 @@
 				console.log("Setting start marker")
 				var start_marker = new google.maps.Marker({
 				// Use point that directions service was using for accuracy
-				position: new google.maps.LatLng(start_lat,start_lng),
+				position: new google.maps.LatLng(start_lat, start_lng),
 				map: map,
 				icon: 'http://maps.google.com/mapfiles/ms/icons/green-dot.png',
 				title: 'Start'
