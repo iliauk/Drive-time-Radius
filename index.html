@@ -122,8 +122,8 @@
 			directionsDisplay.setOptions({ preserveViewport: true })
 			directionsDisplay.setDirections(response)
 			
-			var curr_time = (response.routes[0].legs[0].duration.value/60).toFixed(2)
-			var curr_dist = (response.routes[0].legs[0].distance.value/1000/1.609344).toFixed(2)
+			var curr_time = (response.routes[0].legs[0].duration.value/60).toFixed(1)
+			var curr_dist = (response.routes[0].legs[0].distance.value/1000/1.609344).toFixed(1)
 			var end_dir_lat = response.routes[0].legs[0].end_location.lat()
 			var end_dir_lng = response.routes[0].legs[0].end_location.lng()
 			var start_lat = response.routes[0].legs[0].start_location.lat()
@@ -144,7 +144,7 @@
 				}
 				// Set current end coordinates as previous
 				// If stuck, push forward:
-				if (curr_time.toFixed(1) == old_time.toFixed(1) && curr_dist.toFixed(1) == old_dist.toFixed(1)) {	
+				if (curr_time == old_time && curr_dist == old_dist) {	
 					console.log("Stuck, pushing forward")
 					stuck_old = stuck
 					stuck = stuck + 1
