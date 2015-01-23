@@ -98,8 +98,8 @@
 		
 		if (stuck > stuck_old) {
 		// Push out if stuck
-		end = new google.maps.LatLng(prev_dest_lat + ((default_int*2) * Math.sin(start_s)),
-			prev_dest_lng + ((default_int*2) * Math.cos(start_s)));
+		end = new google.maps.LatLng(prev_dest_lat + ((default_int*3) * Math.sin(start_s)),
+			prev_dest_lng + ((default_int*3) * Math.cos(start_s)));
 		}
 		
 		var request = {
@@ -116,14 +116,13 @@
 		if (status == google.maps.DirectionsStatus.OK) {
 			console.log("Route OK. Try: " + m)
 			no_route = 0
-            //document.getElementById('txt1').value = 'y' + document.getElementById('txt1').value 
-			
+
 			// Display directions on screen
 			directionsDisplay.setOptions({ preserveViewport: true })
 			directionsDisplay.setDirections(response)
 			
-			var curr_time = (response.routes[0].legs[0].duration.value/60).toFixed(2)
-			var curr_dist = (response.routes[0].legs[0].distance.value/1000/1.609344).toFixed(2)
+			var curr_time = (response.routes[0].legs[0].duration.value/60).toFixed(1)
+			var curr_dist = (response.routes[0].legs[0].distance.value/1000/1.609344).toFixed(1)
 			var end_dir_lat = response.routes[0].legs[0].end_location.lat()
 			var end_dir_lng = response.routes[0].legs[0].end_location.lng()
 			var start_lat = response.routes[0].legs[0].start_location.lat()
@@ -144,7 +143,7 @@
 				}
 				// Set current end coordinates as previous
 				// If stuck, push forward:
-				if ((Math.round(curr_time) == Math.round(old_time)) && (Math.round(curr_dist) == Math.round(old_dist))) {	
+				if ((curr_time == old_time) && (curr_dist == old_dist)) {	
 					console.log("Stuck, pushing forward")
 					stuck_old = stuck
 					stuck = stuck + 1
@@ -220,9 +219,8 @@
 			console.log("Google lock-out, pause...")
 			setTimeout(2000)
 			//Retry
-			prev_dest_lat = prev_dest_lat; /*+ (inc_x * Math.cos(start_s))*/
-			prev_dest_lng = prev_dest_lng; /*+ (inc_y * Math.cos(start_s))*/
-            //document.getElementById('txt1').value = 'n' + document.getElementById('txt1').value
+			prev_dest_lat = prev_dest_lat;
+			prev_dest_lng = prev_dest_lng;
 			no_route = no_route + 1;
 			
 			if (no_route > 5) {
