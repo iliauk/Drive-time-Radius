@@ -1,3 +1,4 @@
+
 <html>
 <head>
 <meta name="viewport" content="initial-scale=1.0, user-scalable=no" />
@@ -20,7 +21,7 @@
     var y     = 0;
 	// Number of points
 	//var num_points = 25;
-	var num_points = 3;
+	var num_points = 6;
 	// Stuck
 	var stuck = 0;
 	var stuck_old = 0;
@@ -34,7 +35,7 @@
 	var marker = new google.maps.Marker;
 	var startDrag;
 	
-	var mins = 0;
+	var desired_mins = 0;
     var m     = 0;
     var intval = null;
     var slice  = (2*Math.PI)/num_points; 
@@ -92,6 +93,7 @@
 	}
 	
     function crawldirections(px,py,mins){
+		desired_mins = mins
         var point      = new google.maps.Point(px,py);
         var destpoint  = new google.maps.Point(px + x,py + y);  
 		var start = new google.maps.LatLng(point.x,point.y);
@@ -185,19 +187,6 @@
 				} else {
 					var marker = createMarker(prev_dest_lat, prev_dest_lng, map, old_time, old_dist, "Good");
 				}
-
-				// Polygon
-				polygon.setMap(null);
-				polygon = new google.maps.Polygon({
-                      paths: points,
-                      strokeColor: '#0040FF',
-					  //Yellow
-					  fillColor: '#FFCC00',
-                      //fillColor: '#00BFFF',
-                      fillOpacity: 0.2
-					  //editable: true
-				});
-				polygon.setMap(map);
 
 				if (stuck > 3 ) {
 					// Push out a bit further
@@ -304,8 +293,34 @@
 			title: 'Minutes: ' + old_time + 
 					' Miles: ' + old_dist
 			});
-			
-        points.push(marker.getPosition());
+		
+		// Add if point doesn't already exist
+		var temp_exist = 0
+		for (var i = 0; i < points.length; i++) {
+			if (points[i] == new google.maps.LatLng(prev_dest_lat,prev_dest_lng) || 
+				points[i].equals(new google.maps.LatLng(prev_dest_lat,prev_dest_lng))) {
+			console.log('Already exists')
+			temp_exist = 1
+			}
+		}
+		
+		if (temp_exist == 0) {
+			console.log('New point')
+			points.push(new google.maps.LatLng(prev_dest_lat,prev_dest_lng));
+		}
+		
+		// Polygon
+		polygon.setMap(null);
+		polygon = new google.maps.Polygon({
+                      paths: points,
+                      strokeColor: '#0040FF',
+					  //Yellow
+					  fillColor: '#FFCC00',
+                      //fillColor: '#00BFFF',
+                      fillOpacity: 0.2
+					  //editable: true
+		});
+		polygon.setMap(map);
 		
 		// Add listener for drag-start
 		google.maps.event.addListener(marker, 'dragstart',function(){
@@ -319,19 +334,11 @@
 			directionsDisplay.setMap(map);
 			var request = { 
 				origin: start_marker.getPosition(), 
-				destination: marker.getPosition(), 
+				destination: this.getPosition(), 
 				travelMode: google.maps.TravelMode.DRIVING
 			}; 
 		
 			// Clear old marker
-			for (var i = 0; i < points.length; i++) {
-				console.log(points[i]);
-				console.log(startDrag);
-				if (points[i] == startDrag) {
-					console.log('deleting')
-					points.splice(i, 1);
-				}
-			}
 			marker.setMap(null);		
 		
 			// Create new
@@ -342,40 +349,31 @@
 					directionsDisplay.setDirections(response)
 					
 					// Icon depending on match type
-					if (Math.abs((response.routes[0].legs[0].duration.value/60).toFixed(1)-mins)>1) {
-						var marker = createMarker(
-							response.routes[0].legs[0].end_location.lat(),
-							response.routes[0].legs[0].end_location.lng(),
-							map,
-							(response.routes[0].legs[0].duration.value/60).toFixed(1),
-							(response.routes[0].legs[0].distance.value/1000/1.609344).toFixed(1),
-							"Poor"
-						);	
+					if (Math.abs((response.routes[0].legs[0].duration.value/60) - desired_mins)>1) {
+						var match_type = "Poor"
 					} else {
-						var marker = createMarker(
+						var match_type = "Good"
+					}
+					
+					for (var i = 0; i < points.length; i++) {
+						if (points[i] == startDrag) {
+							console.log('altering')
+							points[i] = new google.maps.LatLng(
+								response.routes[0].legs[0].end_location.lat(),
+								response.routes[0].legs[0].end_location.lng()
+							);
+						}
+					}
+					
+					var marker = createMarker(
 							response.routes[0].legs[0].end_location.lat(),
 							response.routes[0].legs[0].end_location.lng(),
 							map,
 							(response.routes[0].legs[0].duration.value/60).toFixed(1),
 							(response.routes[0].legs[0].distance.value/1000/1.609344).toFixed(1),
-							"Good"
-						);
-					}
-
-					// Polygon
-					polygon.setMap(null);
-					polygon = new google.maps.Polygon({
-						paths: points,
-						strokeColor: '#0040FF',
-						//Blue
-						//fillColor: '#FFCC00',
-						fillColor: '#00BFFF',
-						fillOpacity: 0.2
-						//editable: true
-					});
-					polygon.setMap(map);	
-					// Clear directions
-					//directionsDisplay.setMap();
+							match_type
+					);	
+				
 				}
 			});
 			
