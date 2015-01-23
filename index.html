@@ -297,6 +297,7 @@
 		// Add if point doesn't already exist
 		var temp_exist = 0
 		for (var i = 0; i < points.length; i++) {
+			console.log(points[i]);
 			if (points[i] == new google.maps.LatLng(prev_dest_lat,prev_dest_lng) || 
 				points[i].equals(new google.maps.LatLng(prev_dest_lat,prev_dest_lng))) {
 			console.log('Already exists')
