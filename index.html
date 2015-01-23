@@ -7,25 +7,22 @@
 <script src="jquery.js" type="text/javascript"></script>
 
 <script type="text/javascript">
-    // Originally from: http://sandropaganotti.com/generate-an-isochrone-map-using-google-maps-api/
+
+    // Inspired by: http://sandropaganotti.com/generate-an-isochrone-map-using-google-maps-api/
 	// Rewritten for Google Maps API v3 - Ilia Karmanov 
 	// Stable Version, optimised for 15minute drive times
 	
-	var default_int = 15/3000;
+	var default_int = 0;
 	// Sensitivity (increment)
-    var inc_x = default_int;
-    var inc_y = default_int;
-	// Initial jump
-	var x     = default_int;
-    var y     = default_int;
+    var inc_x = 0;
+    var inc_y = 0;
+	var x     = 0;
+    var y     = 0;
 	// Number of points
-	var num_points = 20;
+	var num_points = 30;
 	// Stuck
 	var stuck = 0;
 	var stuck_old = 0;
-	// Initialize around City, London
-	var my_lat = 51.518175;
-	var my_lng = -0.129064;
 	var map = null;
     var geocoder = null;
 	var directionsDisplay = new google.maps.DirectionsRenderer();
@@ -43,8 +40,13 @@
 	var old_dist = 0;
 	var old_time = 0;
 	var no_route = 0;
+	var start_lat = 0;
+	var start_lng = 0;
 	
     function initialize() {	
+		// Initialize around City, London
+		var my_lat = 51.518175;
+		var my_lng = -0.129064;
 		var mapOptions = {
 			center: new google.maps.LatLng(my_lat, my_lng),
 			zoom: 13
@@ -58,10 +60,17 @@
 		geocoder = new google.maps.Geocoder();	
 		directionsDisplay.setMap(map);	
 		geocoder.geocode( { 'address': address}, function(point, status) {
-		
 		if (status == google.maps.GeocoderStatus.OK) {
 			var source_lat = point[0].geometry.location.lat()
-			var source_lng =point[0].geometry.location.lng()
+			var source_lng = point[0].geometry.location.lng()
+			
+			// Sensitivity (increment)
+			default_int = minutes/3000;
+			inc_x = default_int;
+			inc_y = default_int;
+			x     = default_int;
+			y     = default_int;
+			
 			map.setCenter(point[0].geometry.location);
 			//$('#loader').show();
 			intval = setInterval( "crawldirections(" + source_lat + "," + 
@@ -113,18 +122,20 @@
 			directionsDisplay.setOptions({ preserveViewport: true })
 			directionsDisplay.setDirections(response)
 			
-			var curr_meas = (response.routes[0].legs[0].duration.value/60).toFixed(2)
+			var curr_time = (response.routes[0].legs[0].duration.value/60).toFixed(2)
 			var curr_dist = (response.routes[0].legs[0].distance.value/1000/1.609344).toFixed(2)
 			var end_dir_lat = response.routes[0].legs[0].end_location.lat()
 			var end_dir_lng = response.routes[0].legs[0].end_location.lng()
-			console.log("Current min: " + curr_meas + ", prev min: " + old_time + ", target: " + mins)	
+			var start_lat = response.routes[0].legs[0].start_location.lat()
+			var start_lng = response.routes[0].legs[0].start_location.lng()
+			console.log("Current min: " + curr_time + ", prev min: " + old_time + ", target: " + mins)	
 			
-			// If now over target and before, under target then
-			if (old_dist <= mins && curr_meas > mins){
+			// Straddle the point
+			if (old_time <= mins && curr_time > mins){
                 found     = 1;
             }else{
 				// Dynamically adjust speed
-				if (curr_meas < (0.75*mins)) {
+				if (curr_time < (0.75*mins)) {
 					inc_x = (default_int*2);
 					inc_y = (default_int*2);
 				} else {
@@ -133,34 +144,41 @@
 				}
 				// Set current end coordinates as previous
 				// If stuck, push forward:
-				if (curr_meas == old_time && curr_dist == old_dist) {	
-				console.log("Stuck, pushing forward")
-				stuck_old = stuck
-				stuck = stuck + 1
+				if (curr_time == old_time && curr_dist == old_dist) {	
+					console.log("Stuck, pushing forward")
+					stuck_old = stuck
+					stuck = stuck + 1
 				}
 				// Set current end coordinates as previous
 				prev_dest_lat = end_dir_lat
 				prev_dest_lng = end_dir_lng
 				// Set current distance and time as previous
 				old_dist = curr_dist
-				old_time = curr_meas
+				old_time = curr_time
             }
 			// Max tries depends on minutes (will be longer with longer routes)
-			if(curr_meas > (mins + (mins * 0.4)) || (found ==1) || (stuck > 2)){
+			if (found == 1 || stuck > 2){
 			
+				// Use point that is closer to the target
+				if ((mins - old_time) > (curr_time - mins)) {
+					// Use new if closer
+					prev_dest_lat = end_dir_lat
+					prev_dest_lng = end_dir_lng
+					old_time = curr_time
+					old_dist = curr_dist				
+				}
+				
 				// Push previous directions coordinates to polygon array
                 points.push(new google.maps.LatLng(prev_dest_lat,prev_dest_lng));
+				
 				// Place marker
-				console.log("Found! " + curr_meas + ". Placing marker")
+				console.log("Found! " + curr_time + ". Placing marker")
 				var marker = new google.maps.Marker({
-				// Use previous directions service coordinates (not geocoded)
-				position: new google.maps.LatLng(prev_dest_lat,prev_dest_lng),
-				map: map,
-				// Small icon
-				icon: 'https://maps.gstatic.com/intl/en_us/mapfiles/markers2/measle_blue.png',
-				// Use previous distance and time
-				title: 'Minutes: ' + old_time + 
-				' Miles: ' + old_dist
+					position: new google.maps.LatLng(prev_dest_lat,prev_dest_lng),
+					map: map,
+					icon: 'https://maps.gstatic.com/intl/en_us/mapfiles/markers2/measle_blue.png',
+					title: 'Minutes: ' + old_time + 
+						' Miles: ' + old_dist
 				});
 				
 				polygon.setMap(null);
@@ -184,7 +202,7 @@
                 y = inc_y;
                 m = 0;
                 found = 0;
-                curr_meas = 0;
+                curr_time = 0;
 				old_dist = 0;
 				old_time = 0;
 				prev_dest_lng = 0;
@@ -195,6 +213,7 @@
             }                 
         }else{
 			console.log("Google lock-out, try: " + m)
+			
 			//Retry
 			prev_dest_lat = prev_dest_lat; /*+ (inc_x * Math.cos(start_s))*/
 			prev_dest_lng = prev_dest_lng; /*+ (inc_y * Math.cos(start_s))*/
@@ -214,7 +233,7 @@
 				y = inc_y;
 				m = 0;
 				found = 0;
-				curr_meas = 0;
+				curr_time = 0;
 				old_dist = 0;
 				old_time = 0;
 				prev_dest_lng = 0;
@@ -225,24 +244,24 @@
 		}
 			// Finished all slices
             if(start_s >= (2*Math.PI)){
-					console.log("End. Creating Polygon.")
-                    start_s = 0;
+				console.log("End. Creating Polygon.")
+                start_s = 0;
 
-					// Set a start marker:
-					console.log("Setting start marker")
-					var start_marker = new google.maps.Marker({
-					// Use point that directions service was using for accuracy
-					position: new google.maps.LatLng(response.routes[0].legs[0].start_location.lat(),
-						response.routes[0].legs[0].start_location.lng()),
-					map: map,
-					icon: 'http://maps.google.com/mapfiles/ms/icons/green-dot.png',
-					title: 'Start'
+				// Set a start marker:
+				console.log("Setting start marker")
+				var start_marker = new google.maps.Marker({
+				// Use point that directions service was using for accuracy
+				position: new google.maps.LatLng(start_lat,start_lng),
+				map: map,
+				icon: 'http://maps.google.com/mapfiles/ms/icons/green-dot.png',
+				title: 'Start'
 				});	
-					// Clear directions
-					directionsDisplay.setMap();
-                    //$('#loader').hide();
-                    clearInterval(intval);
-                }
+				
+		// Clear directions
+		directionsDisplay.setMap();
+        //$('#loader').hide();
+        clearInterval(intval);
+            }
 		});
     }
 	
