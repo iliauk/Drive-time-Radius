@@ -122,8 +122,8 @@
 			directionsDisplay.setOptions({ preserveViewport: true })
 			directionsDisplay.setDirections(response)
 			
-			var curr_time = (response.routes[0].legs[0].duration.value/60).toFixed(1)
-			var curr_dist = (response.routes[0].legs[0].distance.value/1000/1.609344).toFixed(1)
+			var curr_time = (response.routes[0].legs[0].duration.value/60).toFixed(2)
+			var curr_dist = (response.routes[0].legs[0].distance.value/1000/1.609344).toFixed(2)
 			var end_dir_lat = response.routes[0].legs[0].end_location.lat()
 			var end_dir_lng = response.routes[0].legs[0].end_location.lng()
 			var start_lat = response.routes[0].legs[0].start_location.lat()
@@ -144,7 +144,7 @@
 				}
 				// Set current end coordinates as previous
 				// If stuck, push forward:
-				if (curr_time == old_time && curr_dist == old_dist) {	
+				if ((Math.round(curr_time) == Math.round(old_time)) && (Math.round(curr_dist) == Math.round(old_dist))) {	
 					console.log("Stuck, pushing forward")
 					stuck_old = stuck
 					stuck = stuck + 1
@@ -156,8 +156,8 @@
 				old_dist = curr_dist
 				old_time = curr_time
             }
-			// Max tries depends on minutes (will be longer with longer routes)
-			if (found == 1 || stuck > 2){
+
+			if (found == 1 || stuck > 3){
 			
 				// Use point that is closer to the target
 				if ((mins - old_time) > (curr_time - mins)) {
@@ -212,8 +212,8 @@
 				console.log("Done!")
             }                 
         }else{
-			console.log("Google lock-out, try: " + m)
-			
+			console.log("Google lock-out, pause...")
+			setTimeout(2000)
 			//Retry
 			prev_dest_lat = prev_dest_lat; /*+ (inc_x * Math.cos(start_s))*/
 			prev_dest_lng = prev_dest_lng; /*+ (inc_y * Math.cos(start_s))*/
