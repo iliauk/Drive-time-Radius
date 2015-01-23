@@ -20,8 +20,7 @@
 	var x     = 0;
     var y     = 0;
 	// Number of points
-	//var num_points = 25;
-	var num_points = 6;
+	var num_points = 25;
 	// Stuck
 	var stuck = 0;
 	var stuck_old = 0;
@@ -297,7 +296,7 @@
 		// Add if point doesn't already exist
 		var temp_exist = 0
 		for (var i = 0; i < points.length; i++) {
-			console.log(points[i]);
+			//console.log(points[i]);
 			if (points[i] == new google.maps.LatLng(prev_dest_lat,prev_dest_lng) || 
 				points[i].equals(new google.maps.LatLng(prev_dest_lat,prev_dest_lng))) {
 			console.log('Already exists')
@@ -357,12 +356,16 @@
 					}
 					
 					for (var i = 0; i < points.length; i++) {
-						if (points[i] == startDrag) {
+						//console.log(points[i])
+						if (points[i] == startDrag || points[i].equals(startDrag)) {
 							console.log('altering')
 							points[i] = new google.maps.LatLng(
 								response.routes[0].legs[0].end_location.lat(),
 								response.routes[0].legs[0].end_location.lng()
 							);
+						} else {
+						console.log('nothing to alter')
+						//console.log(startDrag)
 						}
 					}
 					
