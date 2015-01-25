@@ -273,7 +273,10 @@
 				end_dir_lng = 0;
 			}
 		}
-			// Finished all slices
+
+		});
+		
+		// Finished all slices
 		if(start_s > (2*Math.PI)-slice){
 			console.log("End. Creating Polygon.")
 			start_s = 0;
@@ -312,9 +315,9 @@
 			cut_string_i = 0;
 			curr_address = [];
 			document.getElementById("gen_button").value="Generate New";
-		}				
 		}
-		});
+				
+		}
     }
 	
 	function createMarker(prev_dest_lat, prev_dest_lng, map, old_time, old_dist, match_type) {
