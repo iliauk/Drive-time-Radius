@@ -20,7 +20,7 @@
 	var x     = 0;
     var y     = 0;
 	// Number of points
-	var num_points = 6;
+	var num_points = 8;
 	// Stuck
 	var stuck = 0;
 	var stuck_old = 0;
@@ -29,7 +29,10 @@
 	var directionsDisplay = new google.maps.DirectionsRenderer();
 	var directionsService = new google.maps.DirectionsService();
 	
+	var global_count = 0;
+	var points    = [];
 	var polygon = new google.maps.Polygon;
+	
 	var start_marker = new google.maps.Marker;
 	var marker = new google.maps.Marker;
 	var startDrag;
@@ -39,7 +42,7 @@
     var intval = null;
     var slice  = (2*Math.PI)/num_points; 
     var start_s = 0;
-	var points    = [];
+
     var found     = 0;
 	// Save previous results
 	var prev_dest_lat = 0;
@@ -49,22 +52,38 @@
 	var no_route = 0;
 	var start_lat = 0;
 	var start_lng = 0;
-	
-	
 
+	var curr_address;
+	var cut_string_i = 0;
+	
     function initialize() {	
 		// Initialize around City, London
 		var my_lat = 51.518175;
 		var my_lng = -0.129064;
 		var mapOptions = {
 			center: new google.maps.LatLng(my_lat, my_lng),
-			zoom: 13
+			zoom: 12
 		};
 		map = new google.maps.Map(document.getElementById('map-canvas'),
 		mapOptions);
     }
+		
+	function split_string(address,minutes){
+		// Split multiple locations by separator (//)
+		curr_address = address.split("//");
+		// Initialise with first value
+		drawisochrone(curr_address[0],minutes);
+	}
 	
 	function drawisochrone(address,minutes){	
+		// Initialise new polygon and array holder
+		global_count++;
+		window['points_' + global_count] = [];
+		window['polygon_' + global_count] = new google.maps.Polygon;
+		
+		points = window['points_' + global_count];
+		polygon = window['polygon_' + global_count];
+		
 		// Initialise geocoder and directions
 		geocoder = new google.maps.Geocoder();	
 		directionsDisplay.setMap(map);	
@@ -86,10 +105,20 @@
 			source_lng + "," + minutes +")", 1000);
 		} else {
 			alert("Geocode was not successful for the following reason: " + status);
-		}
-	});
-					
+			// Continue with remaining
+			if (cut_string_i < curr_address.length-1) {
+				// Not finished with all addresses
+				cut_string_i++;
+				drawisochrone(curr_address[cut_string_i],minutes);
+			} else {
+				cut_string_i = 0;
+				curr_address = [];
+				document.getElementById("gen_button").value="Generate New";
+			}
+		}		
+		});	
 	}
+	
 	
     function crawldirections(px,py,mins){
 		desired_mins = mins
@@ -167,7 +196,7 @@
             }
 
 			if (found == 1 || stuck > 3){
-			
+				console.log(start_s)
 				// Use point that is closer to the target
 				if ((mins - old_time) > (curr_time - mins)) {
 					// Use new if closer
@@ -181,8 +210,10 @@
 				console.log("Found! " + old_time + ". Placing marker")
 				
 				// Icon depending on match type
-				if (Math.abs(old_time-mins)>1) {
-					var marker = createMarker(prev_dest_lat, prev_dest_lng, map, old_time, old_dist, "Poor");
+				if (old_time-mins>1) {
+					var marker = createMarker(prev_dest_lat, prev_dest_lng, map, old_time, old_dist, "High");
+				} else if (mins-old_time>1) {
+					var marker = createMarker(prev_dest_lat, prev_dest_lng, map, old_time, old_dist, "Low");
 				} else {
 					var marker = createMarker(prev_dest_lat, prev_dest_lng, map, old_time, old_dist, "Good");
 				}
@@ -243,12 +274,14 @@
 			}
 		}
 			// Finished all slices
-            if(start_s >= (2*Math.PI)){
+			console.log('CHUNK: ' + start_s + ' out of ' + 2*Math.PI)
+            if(start_s > (2*Math.PI)-slice){
 				console.log("End. Creating Polygon.")
                 start_s = 0;
 
 				start_marker = new google.maps.Marker({
 				// Use point that directions service was using for accuracy
+				id: global_count,
 				position: new google.maps.LatLng(start_lat,
 					start_lng),
 				map: map,
@@ -258,20 +291,34 @@
 				// Polygon
 				polygon.setMap(null);
 				polygon = new google.maps.Polygon({
-                      paths: points,
-                      strokeColor: '#0040FF',
-					  //Blue
-					  //fillColor: '#FFCC00',
-                      fillColor: '#00BFFF',
-                      fillOpacity: 0.2
-					  //editable: true
+					id: global_count,
+                    paths: points,
+                    strokeColor: '#0040FF',
+                     fillColor: '#00BFFF',
+                     fillOpacity: 0.2
 				});
 				polygon.setMap(map);			
-		// Clear directions
-		directionsDisplay.setMap();
-        //$('#loader').hide();
-        clearInterval(intval);
-            }
+				// Clear directions
+				directionsDisplay.setMap();
+				//$('#loader').hide();
+				clearInterval(intval);
+				
+				console.log(cut_string_i)
+				console.log(curr_address.length)
+				
+				if (cut_string_i < curr_address.length-1) {
+					// Not finished with all addresses
+					cut_string_i++;
+					drawisochrone(curr_address[cut_string_i],desired_mins);
+				} else {
+					// Finished with all
+					console.log(polygon_1.id)
+					cut_string_i = 0;
+					curr_address = [];
+					document.getElementById("gen_button").value="Generate New";
+				}
+				
+			}
 		});
     }
 	
@@ -279,14 +326,18 @@
 		// Custom icon depending on match
 		var using_icon = ""
 		if (match_type == "Good") {
-			using_icon = 'http://maps.gstatic.com/intl/en_us/mapfiles/markers2/measle_blue.png'
+			using_icon = 'https://rawgit.com/iliauk/Drive-time-Radius/master/measle_green.png'
+		} else if (match_type == "Low" {
+			using_icon = 'https://rawgit.com/iliauk/Drive-time-Radius/master/measle_blue.png'
 		} else {
-			using_icon = 'https://maps.gstatic.com/intl/en_us/mapfiles/markers2/measle.png'
+			using_icon = 'https://rawgit.com/iliauk/Drive-time-Radius/master/measle_red.png'
 		}
 		
 		var marker = new google.maps.Marker({
+			id: global_count,
 			position: new google.maps.LatLng(prev_dest_lat,prev_dest_lng),
 			map: map,
+			// Add id 
 			draggable: true,
 			icon: using_icon,
 			title: 'Minutes: ' + old_time + 
@@ -300,6 +351,8 @@
 			if (points[i] == new google.maps.LatLng(prev_dest_lat,prev_dest_lng) || 
 				points[i].equals(new google.maps.LatLng(prev_dest_lat,prev_dest_lng))) {
 			console.log('Already exists')
+			var poly_colour = '#00BFFF'
+			// Blue
 			temp_exist = 1
 			}
 		}
@@ -307,18 +360,18 @@
 		if (temp_exist == 0) {
 			console.log('New point')
 			points.push(new google.maps.LatLng(prev_dest_lat,prev_dest_lng));
+			var poly_colour = '#FFCC00'
+			// Yellow
 		}
 		
 		// Polygon
 		polygon.setMap(null);
 		polygon = new google.maps.Polygon({
-                      paths: points,
-                      strokeColor: '#0040FF',
-					  //Yellow
-					  fillColor: '#FFCC00',
-                      //fillColor: '#00BFFF',
-                      fillOpacity: 0.2
-					  //editable: true
+			id: global_count,
+            paths: points,
+            strokeColor: '#0040FF',
+			fillColor: poly_colour,
+            fillOpacity: 0.2
 		});
 		polygon.setMap(map);
 		
@@ -332,25 +385,29 @@
 			// Initialise directions
 			directionsDisplay.setMap();
 			directionsDisplay.setMap(map);
+			
 			var request = { 
 				origin: start_marker.getPosition(), 
 				destination: this.getPosition(), 
 				travelMode: google.maps.TravelMode.DRIVING
 			}; 
-		
+
 			// Clear old marker
 			marker.setMap(null);		
 		
 			// Create new
 			directionsService.route(request,function(response, status) {
 				if (status == google.maps.DirectionsStatus.OK) {
+
 					// Display directions on screen
 					directionsDisplay.setOptions({ preserveViewport: true })
 					directionsDisplay.setDirections(response)
 					
 					// Icon depending on match type
-					if (Math.abs((response.routes[0].legs[0].duration.value/60) - desired_mins)>1) {
-						var match_type = "Poor"
+					if (((response.routes[0].legs[0].duration.value/60) - desired_mins)>1) {
+						var match_type = "High"
+					} else if ((desired_min-(response.routes[0].legs[0].duration.value/60))>1){
+						var match_type = "Low"
 					} else {
 						var match_type = "Good"
 					}
@@ -382,7 +439,6 @@
 			});
 			
 		});
-	        return marker;	
 	}
 	
 </script>
@@ -394,13 +450,19 @@
           <input type="text" id="geolocation" name="geolocation" size="60" value="Hyde Park, London"/>
           <label for="minutes">     Minutes:    </label>
           <input type="text" id="minutes" name="minutes" size="3" maxlength="2" value="15"/>
-          <input type="submit" value="Generate Isochrone"
-                 onclick="this.value='Generating';drawisochrone(document.getElementById('geolocation').value,document.getElementById('minutes').value)"/>
+          <input type="submit" id="gen_button" value="Generate New"
+                 onclick="this.value='Generating';split_string(document.getElementById('geolocation').value,document.getElementById('minutes').value)"/>
           <!-- <img id="loader" src="loader.gif" style="display:none;"/> -->
      </div>
      <div id="map-canvas" style="width:70%; height:800px; border: 3px solid rgb(51, 51, 51);"></div>
      <div style="padding-top: 10px;">
-         Instructions: <br> Specify a location and a driving time in minutes. <br> Wait for the plotting to finish. <br> Points coloured in blue are a 'good-match'; whereas those in red are 'poor-matches'. <br> Manually adjust the red points as desired to achieve a more accurate isochrone. <br> Please note that in this version that amount of rays is limited to 8 (to save bandwidth) and travel-time is traffic free. <br> For any questions contact <a href="mailto:ikarmanov@crai.com">ikarmanov@crai.com</a>
+         Instructions: <br> Specify a location(s) and a driving time in minutes.
+		 <br> Multiple locations can be entered with the separator "//" i.e. two slashes
+		 <br> Wait for the plotting to finish.
+		 <br> Points coloured in blue are a 'good-match'; whereas those in red are 'poor-matches'.
+		 <br> Manually adjust the red points as desired to achieve a more accurate isochrone.
+		 <br> Please note that in this version that amount of rays is limited to 8 (to save bandwidth) and travel-time is traffic free.
+		 <br> For any questions contact <a href="mailto:ikarmanov@crai.com">ikarmanov@crai.com</a>
      </div>
   </center>
   <textarea id="txt1" style="display:none;"></textarea>
