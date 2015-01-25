@@ -406,7 +406,7 @@
 					// Icon depending on match type
 					if (((response.routes[0].legs[0].duration.value/60) - desired_mins)>1) {
 						var match_type = "High"
-					} else if ((desired_min-(response.routes[0].legs[0].duration.value/60))>1){
+					} else if ((desired_mins-(response.routes[0].legs[0].duration.value/60))>1){
 						var match_type = "Low"
 					} else {
 						var match_type = "Good"
