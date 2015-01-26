@@ -113,7 +113,7 @@
 			
 			map.setCenter(point[0].geometry.location);
 			intval = setInterval( "crawldirections(" + source_lat + "," + 
-			source_lng + "," + minutes +")", 750);
+			source_lng + "," + minutes +")", 1000);
 		} else {
 			alert("Geocode was not successful for the following reason: " + status);
 			// Continue with remaining
