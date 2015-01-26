@@ -1,3 +1,4 @@
+
 <html>
 <head>
 <meta name="viewport" content="initial-scale=1.0, user-scalable=no" />
@@ -11,8 +12,6 @@
 	// Rewritten for Google Maps API v3 - Ilia Karmanov 
 	
 	// ToDo:
-	
-	// Able to edit polygons even after more polygons have been drawn
 	// Ability to stop execution
 	// Ability to clear all markers and lines polygons
 	// Ability to export polygons 
@@ -23,7 +22,7 @@
 	// Improve website layout
 	
 	// Number of points
-	var num_points = 8;
+	var num_points = 4;
 	
 	var default_int = 0;
     var inc_x = 0;
@@ -44,7 +43,7 @@
 	var points    = [];
 	var polygon = new google.maps.Polygon;
 	
-	var start_marker = new google.maps.Marker;
+	//var start_marker = new google.maps.Marker;
 	var marker = new google.maps.Marker;
 	var startDrag;
 	
@@ -66,6 +65,8 @@
 
 	var curr_address;
 	var cut_string_i = 0;
+	var altering_marker = 0;
+	var old_id = 0;
 	
     function initialize() {	
 		// Initialize around City, London
@@ -85,7 +86,7 @@
 		// Initialise with first value
 		drawisochrone(curr_address[0],minutes);
 	}
-	
+		
 	function drawisochrone(address,minutes){	
 		// Initialise new polygon and array holder
 		global_count++;
@@ -282,13 +283,16 @@
 				end_dir_lng = 0;
 			}
 		}
-			// Finished all slices
-		if(start_s > (2*Math.PI)-slice){
-			console.log("End. Creating Polygon.")
-			start_s = 0;
 
-		start_marker = new google.maps.Marker({
-			// Use point that directions service was using for accuracy
+		if(start_s > (2*Math.PI)-slice){
+		/////////////////////////
+		// Finished all slices///
+		/////////////////////////
+		
+		console.log("End. Creating Polygon.")
+		start_s = 0;
+
+		window['start_marker_' + global_count] = new google.maps.Marker({
 			id: global_count,
 			position: new google.maps.LatLng(start_lat,
 				start_lng),
@@ -296,18 +300,7 @@
 			icon: 'http://maps.google.com/mapfiles/ms/icons/green-dot.png',
 			title: 'Start: ' + curr_address[cut_string_i] + ' (' + cut_string_i + ')'
 		});	
-		
-		// Polygon
-		polygon.setMap(null);
-		polygon = new google.maps.Polygon({
-			id: global_count,
-            paths: points,
-            strokeColor: '#0040FF',
-            fillColor: '#00BFFF',
-            fillOpacity: 0.2
-		});
-		polygon.setMap(map);			
-		
+			
 		// Clear directions
 		directionsDisplay.setMap();
 		clearInterval(intval);
@@ -329,6 +322,7 @@
 	
 	function createMarker(prev_dest_lat, prev_dest_lng, map, old_time, old_dist, match_type) {
 	// Create markers with listeners for drag-start + drag-end
+	
 		// Custom icon depending on match
 		var using_icon = ""
 		if (match_type == "Good") {
@@ -339,26 +333,32 @@
 			using_icon = 'https://rawgit.com/iliauk/Drive-time-Radius/master/measle_red.png'
 		}
 		
+		if (altering_marker == 1) {
+			// Altering; use existing ID
+			var using_id = old_id
+		} else {
+			// New; generate new ID
+			var using_id = global_count
+		}
+		// Revert back
+		altering_marker = 0	
+		
 		var marker = new google.maps.Marker({
-			id: global_count,
+			id: using_id,
 			position: new google.maps.LatLng(prev_dest_lat,prev_dest_lng),
 			map: map,
-			// Add id 
 			draggable: true,
 			icon: using_icon,
 			title: 'Minutes: ' + old_time + 
-					' Miles: ' + old_dist
-			});
+				' Miles: ' + old_dist
+		});
 		
 		// Add if point doesn't already exist
 		var temp_exist = 0
 		for (var i = 0; i < points.length; i++) {
-			//console.log(points[i]);
 			if (points[i] == new google.maps.LatLng(prev_dest_lat,prev_dest_lng) || 
 				points[i].equals(new google.maps.LatLng(prev_dest_lat,prev_dest_lng))) {
 			console.log('Already exists')
-			var poly_colour = '#00BFFF'
-			// Blue
 			temp_exist = 1
 			}
 		}
@@ -366,20 +366,18 @@
 		if (temp_exist == 0) {
 			console.log('New point')
 			points.push(new google.maps.LatLng(prev_dest_lat,prev_dest_lng));
-			var poly_colour = '#FFCC00'
-			// Yellow
 		}
 		
-		// Polygon
-		polygon.setMap(null);
-		polygon = new google.maps.Polygon({
-			id: global_count,
+		// Polygon	
+		window['polygon_' + marker.id].setMap(null);
+		window['polygon_' + marker.id] = new google.maps.Polygon({
             paths: points,
             strokeColor: '#0040FF',
-			fillColor: poly_colour,
+            fillColor: '#00BFFF',
             fillOpacity: 0.2
 		});
-		polygon.setMap(map);
+		window['polygon_' + marker.id].setMap(map);
+
 		
 		// Add listener for drag-start
 		google.maps.event.addListener(marker, 'dragstart',function(){
@@ -388,12 +386,19 @@
 		
 		// Add listener for drag-end
 		google.maps.event.addListener(marker, 'dragend', function() {
+			// Set array and polygon to relevant
+			altering_marker = 1
+			old_id = marker.id
+			points = window['points_' + old_id];
+			
+			// Choose correct start-marker
+			
 			// Initialise directions
 			directionsDisplay.setMap();
 			directionsDisplay.setMap(map);
 			
 			var request = { 
-				origin: start_marker.getPosition(), 
+				origin: window['start_marker_' + old_id].getPosition(), 
 				destination: this.getPosition(), 
 				travelMode: google.maps.TravelMode.DRIVING
 			}; 
@@ -419,7 +424,7 @@
 					}
 					
 					for (var i = 0; i < points.length; i++) {
-						//console.log(points[i])
+						console.log(points[i])
 						if (points[i] == startDrag || points[i].equals(startDrag)) {
 							console.log('altering')
 							points[i] = new google.maps.LatLng(
@@ -428,7 +433,7 @@
 							);
 						} else {
 						console.log('nothing to alter')
-						//console.log(startDrag)
+						console.log(startDrag)
 						}
 					}
 					
@@ -460,7 +465,6 @@
           <input type="text" id="minutes" name="minutes" size="3" maxlength="2" value="15"/>
           <input type="submit" id="gen_button" value="Generate New"
                  onclick="this.value='Generating';split_string(document.getElementById('geolocation').value,document.getElementById('minutes').value)"/>
-          <!-- <img id="loader" src="loader.gif" style="display:none;"/> -->
      </div>
      <div id="map-canvas" style="width:80%; height:800px;"></div>
         <div align="center"> <b>Instructions:</b> <br> Specify a location(s) and a driving time in minutes.
