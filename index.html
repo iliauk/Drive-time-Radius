@@ -1,4 +1,5 @@
 
+
 <html>
 <head>
 <meta name="viewport" content="initial-scale=1.0, user-scalable=no" />
@@ -449,6 +450,7 @@
 						console.log('nothing to alter')
 						console.log(startDrag)
 						}
+						
 					}
 					
 					var marker = createMarker(
@@ -458,8 +460,9 @@
 							(response.routes[0].legs[0].duration.value/60).toFixed(1),
 							(response.routes[0].legs[0].distance.value/1000/1.609344).toFixed(1),
 							match_type
+	
 					);	
-				
+					markers.push(marker);
 				}
 			});
 			
@@ -497,6 +500,8 @@
 		 <br> New algorithm (colour-code all points <5mins, <10mins, <15mins, <25mins)
 		 
 		 <br>
+		 <br><b>Updates: Version 1.1</b>
+		 <br> Added: Modified points were not being removed from the map
 		 <br><b>Updates: Version 1.0</b>
 		 <br> Added: Ability to leave only polygons on the map
 		 <br><b>Updates: Version 0.9</b>
