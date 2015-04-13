@@ -1,0 +1,223 @@
+<!DOCTYPE html >
+
+  <style type="text/css"> 
+            html, body {
+                height: 100%;
+                width: 100%;
+                padding: 0px;
+                margin: 0px;
+            }
+</style>
+
+<head>
+<meta name="viewport" content="initial-scale=1.0, user-scalable=no" />
+<meta http-equiv="content-type" content="text/html; charset=UTF-8"/>
+<title>Geocoded Points</title>
+<xml id="myxml">
+<markers>
+
+<marker name="John Lyon" address="51.570938,-0.344106" lat="51.570938" lng="-0.344106"
+<marker name="Harrow" address="51.572524,-0.333422" lat="51.572524" lng="-0.333422"
+<marker name="Ilia" address="51.568681,-0.341706" lat="51.568681" lng="-0.341706"
+<marker name="Ilia Neighbour" address="51.568491,-0.341756" lat="51.568491" lng="-0.341756"
+<marker name="Mitesh" address="51.568681,-0.341706" lat="51.568681" lng="-0.341706" />
+
+</markers>
+</xml>
+
+<script type="text/javascript" src="https://maps.googleapis.com/maps/api/js?&sensor=false&libraries=geometry"></script>
+<script type="text/javascript">
+
+/*
+//STATA code to generate XML marker dump
+gen markers = ""
+replace markers = `"<marker name=""' + brand2 + `"" address=""' ///
+                + string(lat) + `","' + string(lon) + `"" lat=""' + string(lat) ///
+                                + `"" lng=""' + string(lon) + `"" />"'
+
+keep markers
+duplicates drop
+
+outfile using "$temp\markers_for_map.txt", noquote replace
+*/
+
+// Contains raw data to draw points on
+var XML = document.getElementById("myxml");
+if(XML.documentElement == null)
+XML.documentElement = XML.firstChild; 
+
+var MARKERS = XML.getElementsByTagName("marker");
+var COMPANY_A = "Ilia"	
+var COMPANY_B = "Mitesh"
+//Map
+var map; 	
+//Custom formatting (default is grey)
+var CUSTOM_SET = {
+	COMPANY_A: {
+		icon: 'http://labs.google.com/ridefinder/images/mm_20_blue.png',
+		color: "#0033CC"
+	},
+	COMPANY_B: {
+		icon: 'http://labs.google.com/ridefinder/images/mm_20_red.png',
+		color: "#FF0000"
+	}
+};
+
+//Geocoder
+var geocoder = new google.maps.Geocoder();
+   
+//Search
+function search(address) {
+    geocoder.geocode( { 'address': address}, function(results, status) { 
+            if (status == google.maps.GeocoderStatus.OK) { 
+                var loc = results[0].geometry.location;
+				map.panTo(loc);
+            } 
+            else {
+                alert("Not found: " + status); 
+            } 
+        }
+    );
+};
+
+//Initialise
+function load() {
+	// Initialize around City, London
+	var my_lat = 51.518175;
+	var my_lng = -0.129064;
+	var mapOptions = {
+			center: new google.maps.LatLng(my_lat, my_lng),
+			zoom: 12
+	};
+	
+	map = new google.maps.Map(document.getElementById('map'),
+		mapOptions);
+	
+	var infoWindow = new google.maps.InfoWindow;
+	//var bounds = new google.maps.LatLngBounds();
+
+	// Loop across all MARKERS in XML dump
+	for (var i = 0; i < MARKERS.length; i++) {
+			
+		var name = MARKERS[i].getAttribute("name");
+		var address = MARKERS[i].getAttribute("address");
+		
+		var point_i = new google.maps.LatLng(
+			parseFloat(MARKERS[i].getAttribute("lat")),
+			parseFloat(MARKERS[i].getAttribute("lng")));
+			
+		var html = "<b>" + name + "</b> <br/>" + address;
+		var icon = CUSTOM_SET[name] || {icon: 'http://labs.google.com/ridefinder/images/mm_20_gray.png'};
+		
+		var marker = new google.maps.Marker({
+				map: map,
+				//In case overlaps
+				//draggable:true,
+				position: point_i,
+				icon: icon.icon,
+		});
+									
+		//bounds.extend(point_i);
+		bindInfoWindow(marker, map, infoWindow, html);
+		
+	}
+	//map.fitBounds(bounds);
+}
+
+//InfoWindow
+function bindInfoWindow(marker, map, infoWindow, html) {
+	google.maps.event.addListener(marker, 'click', function() {
+		infoWindow.setContent(html);
+		infoWindow.open(map, marker);
+	});
+}
+
+//Isochrone
+function isochrone(radius) {
+	var num_radius = parseFloat(radius);
+	txtOutput.value += "Start.\n";
+	// Loop across all MARKERS in XML dump
+	for (var i = 0; i < MARKERS.length; i++) {
+			
+		var name = MARKERS[i].getAttribute("name");
+		var address = MARKERS[i].getAttribute("address");
+		
+		var point_i = new google.maps.LatLng(
+			parseFloat(MARKERS[i].getAttribute("lat")),
+			parseFloat(MARKERS[i].getAttribute("lng")));
+			
+		var icon = CUSTOM_SET[name] || {icon: 'http://labs.google.com/ridefinder/images/mm_20_gray.png'};
+		
+		//For select MARKERS	
+		if (name == COMPANY_A | name == COMPANY_B) {
+			
+			var names_array = [];
+			//Calculate overlaps	
+			for (var j = 0; j < MARKERS.length; j++) {	
+				if (j != i) {
+					var name_j = MARKERS[j].getAttribute("name");	
+					if (name != name_j) {		
+						var point_j = new google.maps.LatLng(
+								parseFloat(MARKERS[j].getAttribute("lat")),
+								parseFloat(MARKERS[j].getAttribute("lng")));		
+							if (google.maps.geometry.spherical.computeDistanceBetween(point_i, point_j) <= num_radius) {	
+								if(names_array.indexOf(name_j) == -1) {
+									names_array.push(name_j);
+								};
+							};
+					};
+				};
+			};
+
+			//Push centre firm to array:
+			names_array.push(name)
+			//Output
+			if ((name == COMPANY_A & (names_array.indexOf(COMPANY_B) != -1)) | (name == COMPANY_B & (names_array.indexOf(COMPANY_A) != -1))) {
+				var counter = names_array.length
+				var overlaps = names_array.toString();
+				txtOutput.value += "Marker: " + name + ", Address: " + address + ", Overlaps: " + counter + ", List: " + overlaps + ", Radius(m): " + num_radius + ".\n";
+			}
+			
+			//Draw radius
+			var draw_circle = new google.maps.Circle({
+					center: point_i,
+					radius: num_radius,
+					strokeColor: icon.color,
+					strokeOpacity: 0.15,
+					strokeWeight: 2,
+					fillColor: icon.color,
+					fillOpacity: 0.15,
+					map: map
+			});		
+		}
+	}
+document.getElementById("gen_button").value="Generate New";
+txtOutput.value += "End."
+}
+
+</script>
+</head>
+
+<body onload="load()">
+<center>
+
+<div style="padding-top: 20px; padding-bottom: 20px;">
+<label for="metres">Metres:</label>
+<input type="text" id="metres" name="metres" size="3" value="200"/>
+<input type="submit" id="gen_button" value="Generate New"
+	onclick="this.value='Generating (please wait...)';isochrone(document.getElementById('metres').value)"/>
+
+<div style="padding-top: 20px; padding-bottom: 20px;">
+<div id="map" style="width:80%; height:800px;"></div>
+
+<div style="padding-top: 20px; padding-bottom: 20px;">
+<input type="text" id="search_address" value=""/>
+<input type="submit" id="search_button" value="Pan to Address"
+	onclick="search(document.getElementById('search_address').value);"/>
+
+<div style="padding-top: 20px; padding-bottom: 20px;">
+<textarea id="txtOutput" style="width:80%; height: 200px"></textarea>
+</center>
+</body>
+
+</html>
