@@ -16,10 +16,10 @@
 <xml id="myxml">
 <markers>
 
-<marker name="John Lyon" address="51.570938,-0.344106" lat="51.570938" lng="-0.344106"
-<marker name="Harrow" address="51.572524,-0.333422" lat="51.572524" lng="-0.333422"
-<marker name="Ilia" address="51.568681,-0.341706" lat="51.568681" lng="-0.341706"
-<marker name="Ilia Neighbour" address="51.568491,-0.341756" lat="51.568491" lng="-0.341756"
+<marker name="John Lyon" address="51.570938,-0.344106" lat="51.570938" lng="-0.344106" />
+<marker name="Harrow" address="51.572524,-0.333422" lat="51.572524" lng="-0.333422" />
+<marker name="Ilia" address="51.568681,-0.341706" lat="51.568681" lng="-0.341706" />
+<marker name="Ilia Neighbour" address="51.568491,-0.341756" lat="51.568491" lng="-0.341756" />
 <marker name="Mitesh" address="51.568681,-0.341706" lat="51.568681" lng="-0.341706" />
 
 </markers>
@@ -82,9 +82,9 @@ function search(address) {
 
 //Initialise
 function load() {
-	// Initialize around City, London
-	var my_lat = 51.518175;
-	var my_lng = -0.129064;
+	// Initialize around London (51.572524,-0.333422)
+	var my_lat = 51.572524;
+	var my_lng = -0.333422;
 	var mapOptions = {
 			center: new google.maps.LatLng(my_lat, my_lng),
 			zoom: 12
