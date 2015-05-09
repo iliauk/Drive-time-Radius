@@ -30,12 +30,20 @@
 <xml id="myxml">
 <markers>
 <marker name="GENESIS GYM" address="51.537243,-0.303951" lat="51.537243" lng="-0.303951" />
+<marker name="GOLDS GYM" address="51.584042, -0.331043" lat="51.584042" lng="-0.331043" />
+<marker name="SOHO GYM" address="51.501499, -0.091350" lat="51.501499" lng="-0.091350" />
+<marker name="SOHO GYM" address="51.504208, -0.109255" lat="51.504208" lng="-0.109255" />
+<marker name="FITNESS FIRST" address="51.515097, -0.082777" lat="51.515097" lng="-0.082777" />
+<marker name="FITNESS FIRST" address="51.505532, -0.085208" lat="51.505532" lng="-0.085208" />
+<marker name="FITNESS FIRST" address="51.517819, -0.077036" lat="51.517819" lng="-0.077036" />
+
+
 </markers>
 </xml>
 
-<script type="text/javascript" src="https://maps.googleapis.com/maps/api/js?&sensor=FALSE"></script>
-<script type="text/javascript" src="https://google-maps-utility-library-v3.googlecode.com/svn/trunk/markerclusterer/src/markerclusterer.js"></script>
-<script type="text/javascript" src="https://google-maps-utility-library-v3.googlecode.com/svn/tags/markerwithlabel/1.1.9/src/markerwithlabel.js"></script>
+<script type="text/javascript" src="https://maps.googleapis.com/maps/api/js?&sensor=false&libraries=geometry"></script>
+<script type="text/javascript" src="http://google-maps-utility-library-v3.googlecode.com/svn/trunk/markerclusterer/src/markerclusterer.js"></script>
+<script type="text/javascript" src="http://google-maps-utility-library-v3.googlecode.com/svn/tags/markerwithlabel/1.1.9/src/markerwithlabel.js"></script>
 <script type="text/javascript">
 
 	//GLOBALS
@@ -44,15 +52,15 @@
 	XML.documentElement = XML.firstChild; 
 	var MARKERS = XML.getElementsByTagName("marker");
 	var arr_markers = [];
-	var CLUSTER_ZOOM = 6;
+	var CLUSTER_ZOOM = 12;
 	var POLYGON_COL = ""
 	//Custom formatting (default is grey)
 	var CUSTOM_SET = {
-		'GYM A': {
+		'SOHO GYM': {
 			icon: 'http://labs.google.com/ridefinder/images/mm_20_blue.png',
 			color: "#0033CC"
 		},
-		'GENESIS': {
+		'FITNESS FIRST': {
 			icon: 'http://labs.google.com/ridefinder/images/mm_20_red.png',
 			color: "#FF0000"
 		}
@@ -511,6 +519,57 @@
 		return marker
 	}
 	
+	function isochrone(radius) {
+		var num_radius = parseFloat(radius);
+		txtOutput.value += "Start.\n";
+		// Loop across all MARKERS in XML dump
+		for (var i = 0; i < MARKERS.length; i++) {
+			var name = MARKERS[i].getAttribute("name")	
+			var address = MARKERS[i].getAttribute("address")	
+			var point_i = new google.maps.LatLng(
+				parseFloat(MARKERS[i].getAttribute("lat")),
+				parseFloat(MARKERS[i].getAttribute("lng")));
+			
+			var draw = MARKERS[i].getAttribute("draw_radius")	
+			var icon = CUSTOM_SET[name] || {icon: 'http://labs.google.com/ridefinder/images/mm_20_gray.png'}
+					var names_array = []
+					//Calculate overlaps	
+					for (var j = 0; j < MARKERS.length; j++) {	
+						if (j != i) {
+							var name_j = MARKERS[j].getAttribute("name")	
+							if (name != name_j) {		
+								var point_j = new google.maps.LatLng(
+										parseFloat(MARKERS[j].getAttribute("lat")),
+										parseFloat(MARKERS[j].getAttribute("lng")));		
+									if (google.maps.geometry.spherical.computeDistanceBetween(point_i, point_j) <= num_radius) {	
+										if(names_array.indexOf(name_j) == -1) {
+											names_array.push(name_j)
+										}
+									}
+							}
+						}
+					}
+					//Push centre firm to array:
+					names_array.push(name)
+					//Output
+					var counter = names_array.length
+					var overlaps = names_array.toString();
+					txtOutput.value += "Marker: " + name + ", Address: " + address + ", Overlaps: " + counter + ", List: " + overlaps + ", Radius(m): " + num_radius + ".\n";
+					//Draw radius
+					var draw_circle = new google.maps.Circle({
+							center: point_i,
+							radius: num_radius,
+							strokeColor: icon.color,
+							strokeOpacity: 0.15,
+							strokeWeight: 2,
+							fillColor: icon.color,
+							fillOpacity: 0.15,
+							map: map
+					})		
+			}
+		document.getElementById("gen_button").value="Generate New Crow";
+		txtOutput.value += "End."
+	}
 	//Search Map for Address
 	function search(address) {
 		geocoder.geocode( { 'address': address}, function(results, status) { 
@@ -554,6 +613,13 @@
 	<input type="submit" id="search_button" value="Pan to Address"
 	onclick="search(document.getElementById('search_address').value);"/>
 
+	<div style="padding-top: 20px; padding-bottom: 20px;">
+<label for="metres">Metres (as the crow flies):</label>
+<input type="text" id="metres" name="metres" size="3" value="800"/>
+<input type="submit" id="gen_button" value="Generate New Crow"
+	onclick="this.value='Generating (please wait...)';isochrone(document.getElementById('metres').value)"/>
+<div style="padding-top: 20px; padding-bottom: 20px;">
+<textarea id="txtOutput" style="width:80%; height: 200px"></textarea>
 
   </center>
 </body>
