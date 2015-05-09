@@ -33,7 +33,7 @@
 </markers>
 </xml>
 
-<script type="text/javascript" src="http://maps.googleapis.com/maps/api/js?&sensor=FALSE"></script>
+<script type="text/javascript" src="https://maps.googleapis.com/maps/api/js?&sensor=FALSE"></script>
 <script type="text/javascript" src="http://google-maps-utility-library-v3.googlecode.com/svn/trunk/markerclusterer/src/markerclusterer.js"></script>
 <script type="text/javascript" src="https://google-maps-utility-library-v3.googlecode.com/svn/tags/markerwithlabel/1.1.9/src/markerwithlabel.js"></script>
 <script type="text/javascript">
@@ -186,7 +186,7 @@
 			
 			map.setCenter(point[0].geometry.location)
 			intval = setInterval( "crawldirections(" + source_lat + "," + 
-			source_lng + "," + minutes +")", 900);
+			source_lng + "," + minutes +")", 1000);
 		} else {
 			alert("Geocode was not successful for the following reason: " + status)
 			// Continue with remaining
@@ -236,8 +236,8 @@
 		}
 
 		directionsService.route(request,function(response, status) {
+		console.log(status)
 		if (status == google.maps.DirectionsStatus.OK) {
-			console.log("Route OK. Try: " + m)
 			no_route = 0
 
 			// Display directions on screen

@@ -131,7 +131,7 @@
 		var markerClusterer = new MarkerClusterer(map, arr_markers, {
 			maxZoom: CLUSTER_ZOOM,
 		})
-		//map.fitBounds(bounds)
+		map.fitBounds(bounds)
     }
 	
 	// Clear: Leave only Polygons
@@ -186,7 +186,7 @@
 			
 			map.setCenter(point[0].geometry.location)
 			intval = setInterval( "crawldirections(" + source_lat + "," + 
-			source_lng + "," + minutes +")", 900);
+			source_lng + "," + minutes +")", 2000);
 		} else {
 			alert("Geocode was not successful for the following reason: " + status)
 			// Continue with remaining
@@ -203,170 +203,70 @@
 		})	
 	}
 	
-	// Start crawling
     function crawldirections(px,py,mins){
-		desired_mins = mins
-        //try
+		//Try:
 		m = m + 1
+		if (old_time < mins) {
+			x = x + (inc_x * Math.sin(start_s))
+			y = y + (inc_y * Math.cos(start_s))
+		} else if (old_time >= mins) {
+			x = x - (inc_x * Math.sin(start_s))
+			y = y - (inc_y * Math.cos(start_s))
+		}
 		
-        var point      = new google.maps.Point(px,py);
-        var destpoint  = new google.maps.Point(px + x,py + y);  
-		var start = new google.maps.LatLng(point.x,point.y);
-		var end = new google.maps.LatLng(destpoint.x,destpoint.y);
+        var point     	= new google.maps.Point(px,py)
+        var destpoint 	= new google.maps.Point(px + x,py + y)
+		var start 		= new google.maps.LatLng(point.x,point.y)
+		var end			= new google.maps.LatLng(destpoint.x,destpoint.y)
 		
 		var request = {
 			origin: start,
 			destination: end,
 			travelMode: TRAVEL_MODE
 		}
-
+		
 		directionsService.route(request,function(response, status) {
-		if (status == google.maps.DirectionsStatus.OK) {
-			console.log("Route OK. Try: " + m)
-			no_route = 0
-
-			// Display directions on screen
-			directionsDisplay.setOptions({ preserveViewport: true })
-			directionsDisplay.setDirections(response)
+			if (status == google.maps.DirectionsStatus.OK) {
 			
-			var curr_time = (response.routes[0].legs[0].duration.value/60).toFixed(1)
-			var curr_dist = (response.routes[0].legs[0].distance.value/1000/1.609344).toFixed(1)
-			var end_dir_lat = response.routes[0].legs[0].end_location.lat()
-			var end_dir_lng = response.routes[0].legs[0].end_location.lng()
-			var start_lat = response.routes[0].legs[0].start_location.lat()
-			var start_lng = response.routes[0].legs[0].start_location.lng()
-			console.log("Current min: " + curr_time + ", prev min: " + old_time + ", target: " + mins)	
-			
-			// Straddle the point
-			if (old_time < mins && curr_time >= mins){
-                found     = 1;
-            }else{
-				// Set current end coordinates as previous
-				prev_dest_lat = end_dir_lat
-				prev_dest_lng = end_dir_lng
-				// Set current distance and time as previous
+				console.log("Route OK")
+				directionsDisplay.setOptions({ preserveViewport: true })
+				directionsDisplay.setDirections(response)
+				
+				var curr_time 		= (response.routes[0].legs[0].duration.value/60).toFixed(1)
+				var curr_dist 		= (response.routes[0].legs[0].distance.value/1000/1.609344).toFixed(1)
+				var end_dir_lat		= response.routes[0].legs[0].end_location.lat()
+				var end_dir_lng 	= response.routes[0].legs[0].end_location.lng()
+				console.log("Current min: " + curr_time + ", prev min: " + old_time + ", target: " + mins)
+				
+				//Check if straddled
+				if ((old_time <= mins && curr_time > mins) || (old_time >= mins && curr_time < mins)) {
+					found = 1
+				}
+				
+				//Transition variables
 				old_dist = curr_dist
 				old_time = curr_time
-				// Go backwards or forwards
-				if (old_time > mins) {
-					x = x - (inc_x * Math.sin(start_s)) 
-					y = y - (inc_y * Math.cos(start_s))
-				} else {
-					x = x + (inc_x * Math.sin(start_s))
-					y = y + (inc_y * Math.cos(start_s))
-				}
-            }
+				prev_dest_lat = end_dir_lat
+				prev_dest_lng = end_dir_lng
+				
+				//Place marker
+				if (found == 1 || stuck > 3) {
+					// Use old point
+					var marker = createMarker(prev_dest_lat, prev_dest_lng, map, old_time, old_dist, "Good")
 
-			if (found == 1 || stuck > 3){
-				console.log(start_s)
-				// Use point that is closer to the target
-				if ((mins - old_time) > (curr_time - mins)) {
-					// Use new if closer
-					prev_dest_lat = end_dir_lat
-					prev_dest_lng = end_dir_lng
-					old_time = curr_time
-					old_dist = curr_dist				
-				}
-				
-				// Place marker
-				console.log("Found! " + old_time + ". Placing marker")
-				
-				// Icon depending on match type
-				if (old_time-mins>1) {
-					var marker = createMarker(prev_dest_lat, prev_dest_lng, map, old_time, old_dist, "High");
-				} else if (mins-old_time>1) {
-					var marker = createMarker(prev_dest_lat, prev_dest_lng, map, old_time, old_dist, "Low");
-				} else {
-					var marker = createMarker(prev_dest_lat, prev_dest_lng, map, old_time, old_dist, "Good");
-				}
-				// Reset variables		
-				stuck_old = 0;
-				stuck = 0;
-				x = x - (inc_x * Math.sin(start_s)) + (inc_x * Math.cos(start_s))
-				y = y - (inc_y * Math.cos(start_s)) + (inc_x * Math.sin(start_s))
-                m = 0;
-                found = 0;
-				//old_dist = 0;
-				//old_time = 0;
-				//prev_dest_lng = 0;
-				//prev_dest_lat = 0;
-				//end_dir_lat = 0;
-				//end_dir_lng = 0;
-				console.log("Done!")
-				
-				if (stuck > 3 ) {
-					// Push out a bit further
-					start_s = start_s + (2*slice)
-				} else {
 					// Next slice
-					start_s = start_s + slice;
+					start_s = start_s + slice
+					
+					// Crawl along perimeter (rather than going back in)
+					//x = x - (inc_x * Math.sin(start_s)) + (inc_x * Math.cos(start_s))
+					//y = y - (inc_y * Math.cos(start_s)) - (inc_y * Math.sin(start_s))
+					x = x  - (inc_x * Math.cos((2*Math.PI)-start_s))
+					y = y  + (inc_y * Math.sin((2*Math.PI)-start_s))
+					//Reset Variables
+					found = 0
 				}
-            }                 
-        }else{
-			console.log("Google lock-out, retry ...")
-			//Retry
-			prev_dest_lat = prev_dest_lat;
-			prev_dest_lng = prev_dest_lng;
-			no_route = no_route + 1;
-			
-			if (no_route > 5) {
-				console.log("No route. Skipping.")
-				// Next slice
-				start_s = start_s + slice;
-				// Reset variables	
-				inc_x = default_int;
-				inc_y = default_int;
-				stuck_old = 0;
-				stuck = 0;
-				x = inc_x;
-				y = inc_y;
-				m = 0;
-				found = 0;
-				curr_time = 0;
-				old_dist = 0;
-				old_time = 0;
-				prev_dest_lng = 0;
-				prev_dest_lat = 0;
-				end_dir_lat = 0;
-				end_dir_lng = 0;
-			}
-		}
-
-		if(start_s > (2*Math.PI)-slice){
-		/////////////////////////
-		// Finished all slices///
-		/////////////////////////
-		
-		console.log("End. Creating Polygon.")
-		start_s = 0;
-
-		window['start_marker_' + global_count] = new google.maps.Marker({
-			id: global_count,
-			position: new google.maps.LatLng(start_lat,start_lng),
-			map: map,
-			icon: 'http://maps.google.com/mapfiles/ms/icons/green-dot.png'
-		})
-		
-		markers.push(window['start_marker_' + global_count])
-		
-		// Clear directions
-		directionsDisplay.setMap()
-		clearInterval(intval)
-				
-		if (cut_string_i < curr_address.length-1) {
-			// Not finished with all addresses in array
-			cut_string_i++
-			drawisochrone(curr_address[cut_string_i],desired_mins)
-		} else {
-			// Finished with all
-			cut_string_i = 0
-			curr_address = []
-			document.getElementById("gen_button_red").value="Generate New (Red)"
-			document.getElementById("gen_button_blue").value="Generate New (Blue)"
-		}	
-		
-		}
-		});
+			}		
+		})	
     }
 	
 	// Create markers with listeners for drag-start + drag-end
