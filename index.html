@@ -36,8 +36,9 @@
 <marker name="FITNESS FIRST" address="51.515097, -0.082777" lat="51.515097" lng="-0.082777" />
 <marker name="FITNESS FIRST" address="51.505532, -0.085208" lat="51.505532" lng="-0.085208" />
 <marker name="FITNESS FIRST" address="51.517819, -0.077036" lat="51.517819" lng="-0.077036" />
-
-
+<marker name="FITNESS FIRST" address="51.505049, -0.087517" lat="51.505049" lng="-0.087517" />
+<marker name="LSE Gym" address="51.514641, -0.117540" lat="51.514641" lng="-0.117540" />
+<marker name="ULU Gym" address="51.522614, -0.131120" lat="51.522614" lng="-0.131120" />
 </markers>
 </xml>
 
@@ -47,12 +48,14 @@
 <script type="text/javascript">
 
 	//GLOBALS
-	var XML = document.getElementById("myxml");
+	var XML = document.getElementById("myxml")
+	
 	if(XML.documentElement == null)
-	XML.documentElement = XML.firstChild; 
-	var MARKERS = XML.getElementsByTagName("marker");
-	var arr_markers = [];
-	var CLUSTER_ZOOM = 12;
+	XML.documentElement = XML.firstChild
+	
+	var MARKERS = XML.getElementsByTagName("marker")
+	var arr_markers = []
+	var CLUSTER_ZOOM = 12
 	var POLYGON_COL = ""
 	//Custom formatting (default is grey)
 	var CUSTOM_SET = {
@@ -79,8 +82,8 @@
 	var stuck_old = 0;
 	var map = null;
     var geocoder = new google.maps.Geocoder()	
-	var directionsDisplay = new google.maps.DirectionsRenderer();
-	var directionsService = new google.maps.DirectionsService();
+	var directionsDisplay = new google.maps.DirectionsRenderer()
+	var directionsService = new google.maps.DirectionsService()
 	var global_count = 0;
 	var points    = [];
 	var polygon = new google.maps.Polygon;
@@ -142,6 +145,23 @@
 		map.fitBounds(bounds)
     }
 	
+	//Search Map for Address
+	function search(address) {
+		geocoder.geocode( { 'address': address}, function(results, status) { 
+				if (status == google.maps.GeocoderStatus.OK) { 
+					var loc = results[0].geometry.location
+					//Pan to location
+					map.panTo(loc)
+					//Zoom to location
+					map.setZoom(16)
+				} 
+				else {
+					alert("Not found: " + status) 
+				} 
+			}
+		)
+	}
+	
 	// Clear: Leave only Polygons
 	function clear_map() {
 		directionsDisplay.setMap()
@@ -158,13 +178,13 @@
 	// Split multiple locations by separator (//)	
 	function split_string_red(address,minutes){
 		POLYGON_COL = "#FF0000"
-		curr_address = address.split("//");
-		drawisochrone(curr_address[0],minutes);
+		curr_address = address.split("//")
+		drawisochrone(curr_address[0],minutes)
 	}
 	function split_string_blue(address,minutes){
 		POLYGON_COL = "#0033CC"
-		curr_address = address.split("//");
-		drawisochrone(curr_address[0],minutes);
+		curr_address = address.split("//")
+		drawisochrone(curr_address[0],minutes)
 	}
 	
 	// Initialise drawing function
@@ -177,37 +197,37 @@
 		points = window['points_' + global_count]
 		polygon = window['polygon_' + global_count]
 		
-		// Initialise geocoder and directions
+		// Initialise
 		directionsDisplay.setMap(map)
 		geocoder.geocode( { 'address': address}, function(point, status) {
-		if (status == google.maps.GeocoderStatus.OK) {
-			var source_lat = point[0].geometry.location.lat()
-			var source_lng = point[0].geometry.location.lng()
-			
-			// Sensitivity (increment)
-			// 6000 after trial-and-error parameter testing
-			default_int = minutes/10000
-			inc_x = default_int
-			inc_y = default_int
-			x     = default_int
-			y     = default_int
-			
-			map.setCenter(point[0].geometry.location)
-			intval = setInterval( "crawldirections(" + source_lat + "," + 
-			source_lng + "," + minutes +")", 1000);
-		} else {
-			alert("Geocode was not successful for the following reason: " + status)
-			// Continue with remaining
-			if (cut_string_i < curr_address.length-1) {
-				// Not finished with all addresses
-				cut_string_i++
-				drawisochrone(curr_address[cut_string_i],minutes)
+			if (status == google.maps.GeocoderStatus.OK) {
+				var source_lat = point[0].geometry.location.lat()
+				var source_lng = point[0].geometry.location.lng()
+				
+				// Sensitivity (increment)
+				// 6000 after trial-and-error parameter testing
+				default_int = minutes/10000
+				inc_x = default_int
+				inc_y = default_int
+				x     = default_int
+				y     = default_int
+				
+				map.setCenter(point[0].geometry.location)
+				intval = setInterval( "crawldirections(" + source_lat + "," + 
+				source_lng + "," + minutes +")", 1000);
 			} else {
-				cut_string_i = 0
-				curr_address = []
-				document.getElementById("gen_button").value="Generate New"
-			}
-		}		
+				alert("Geocode was not successful for the following reason: " + status)
+				// Continue with remaining
+				if (cut_string_i < curr_address.length-1) {
+					// Not finished with all addresses
+					cut_string_i++
+					drawisochrone(curr_address[cut_string_i],minutes)
+				} else {
+					cut_string_i = 0
+					curr_address = []
+					document.getElementById("gen_button").value="Generate New"
+				}
+			}		
 		})	
 	}
 	
@@ -244,162 +264,148 @@
 		}
 
 		directionsService.route(request,function(response, status) {
-		console.log(status)
-		if (status == google.maps.DirectionsStatus.OK) {
-			no_route = 0
-
-			// Display directions on screen
-			directionsDisplay.setOptions({ preserveViewport: true })
-			directionsDisplay.setDirections(response)
+			console.log(status)
+			if (status == google.maps.DirectionsStatus.OK) {
+				no_route = 0
+				// Display directions on screen
+				directionsDisplay.setOptions({ preserveViewport: true })
+				directionsDisplay.setDirections(response)
 			
-			var curr_time = (response.routes[0].legs[0].duration.value/60).toFixed(1)
-			var curr_dist = (response.routes[0].legs[0].distance.value/1000/1.609344).toFixed(1)
-			var end_dir_lat = response.routes[0].legs[0].end_location.lat()
-			var end_dir_lng = response.routes[0].legs[0].end_location.lng()
-			var start_lat = response.routes[0].legs[0].start_location.lat()
-			var start_lng = response.routes[0].legs[0].start_location.lng()
-			console.log("Current min: " + curr_time + ", prev min: " + old_time + ", target: " + mins)	
-			
-			// Straddle the point
-			if (old_time <= mins && curr_time > mins){
-                found     = 1;
-            }else{
-				// Dynamically adjust speed
-				if (curr_time < (0.70*mins)) {
-					inc_x = (default_int*2);
-					inc_y = (default_int*2);
-				} else {
-					inc_x = default_int;
-					inc_y = default_int;
-				}
-				// Set current end coordinates as previous
-				// If stuck, push forward:
-				if ((curr_time == old_time) && (curr_dist == old_dist)) {	
-					console.log("Stuck, pushing forward")
-					stuck_old = stuck
-					stuck = stuck + 1
-				}
-				// Set current end coordinates as previous
-				prev_dest_lat = end_dir_lat
-				prev_dest_lng = end_dir_lng
-				// Set current distance and time as previous
-				old_dist = curr_dist
-				old_time = curr_time
-            }
-
-			if (found == 1 || stuck > 3){
-				console.log(start_s)
-				// Use point that is closer to the target
-				if ((mins - old_time) > (curr_time - mins)) {
-					// Use new if closer
+				var curr_time = (response.routes[0].legs[0].duration.value/60).toFixed(1)
+				var curr_dist = (response.routes[0].legs[0].distance.value/1000/1.609344).toFixed(1)
+				var end_dir_lat = response.routes[0].legs[0].end_location.lat()
+				var end_dir_lng = response.routes[0].legs[0].end_location.lng()
+				var start_lat = response.routes[0].legs[0].start_location.lat()
+				var start_lng = response.routes[0].legs[0].start_location.lng()
+				console.log("Current min: " + curr_time + ", prev min: " + old_time + ", target: " + mins)	
+				
+				// Straddle the point
+				if (old_time <= mins && curr_time > mins){
+					found     = 1;
+				}else{
+					// Dynamically adjust speed
+					if (curr_time < (0.70*mins)) {
+						inc_x = (default_int*2);
+						inc_y = (default_int*2);
+					} else {
+						inc_x = default_int;
+						inc_y = default_int;
+					}
+					// Set current end coordinates as previous
+					// If stuck, push forward:
+					if ((curr_time == old_time) && (curr_dist == old_dist)) {	
+						console.log("Stuck, pushing forward")
+						stuck_old = stuck
+						stuck = stuck + 1
+					}
+					// Set current end coordinates as previous
 					prev_dest_lat = end_dir_lat
 					prev_dest_lng = end_dir_lng
+					// Set current distance and time as previous
+					old_dist = curr_dist
 					old_time = curr_time
-					old_dist = curr_dist				
-				}
-				
-				// Place marker
-				console.log("Found! " + old_time + ". Placing marker")
-				
-				// Icon depending on match type
-				if (old_time-mins>1) {
-					var marker = createMarker(prev_dest_lat, prev_dest_lng, map, old_time, old_dist, "High");
-				} else if (mins-old_time>1) {
-					var marker = createMarker(prev_dest_lat, prev_dest_lng, map, old_time, old_dist, "Low");
-				} else {
-					var marker = createMarker(prev_dest_lat, prev_dest_lng, map, old_time, old_dist, "Good");
 				}
 
-				if (stuck > 3 ) {
-					// Push out a bit further
-					start_s = start_s + (2*slice)
-				} else {
+				if (found == 1 || stuck > 3){
+					console.log(start_s)
+					// Use point that is closer to the target
+					if ((mins - old_time) > (curr_time - mins)) {
+						// Use new if closer
+						prev_dest_lat = end_dir_lat
+						prev_dest_lng = end_dir_lng
+						old_time = curr_time
+						old_dist = curr_dist				
+					}
+					// Place marker
+					console.log("Found! " + old_time + ". Placing marker")
+					// Icon depending on match type
+					if (old_time-mins>1) {
+						var marker = createMarker(prev_dest_lat, prev_dest_lng, map, old_time, old_dist, "High");
+					} else if (mins-old_time>1) {
+						var marker = createMarker(prev_dest_lat, prev_dest_lng, map, old_time, old_dist, "Low");
+					} else {
+						var marker = createMarker(prev_dest_lat, prev_dest_lng, map, old_time, old_dist, "Good");
+					}
+					if (stuck > 3 ) {
+						// Push out a bit further
+						start_s = start_s + (2*slice)
+					} else {
+						// Next slice
+						start_s = start_s + slice;
+					}
+					// Reset variables		
+					inc_x = default_int;
+					inc_y = default_int;
+					stuck_old = 0;
+					stuck = 0;
+					x = inc_x;
+					y = inc_y;
+					m = 0;
+					found = 0;
+					curr_time = 0;
+					old_dist = 0;
+					old_time = 0;
+					prev_dest_lng = 0;
+					prev_dest_lat = 0;
+					end_dir_lat = 0;
+					end_dir_lng = 0;
+					console.log("Done!")
+				}                 
+			} else {
+				console.log("Google lock-out, retry ...")
+				//Retry
+				prev_dest_lat = prev_dest_lat;
+				prev_dest_lng = prev_dest_lng;
+				no_route = no_route + 1;
+				
+				if (no_route > 5) {
+					console.log("No route. Skipping.")
 					// Next slice
 					start_s = start_s + slice;
+					// Reset variables	
+					inc_x = default_int;
+					inc_y = default_int;
+					stuck_old = 0;
+					stuck = 0;
+					x = inc_x;
+					y = inc_y;
+					m = 0;
+					found = 0;
+					curr_time = 0;
+					old_dist = 0;
+					old_time = 0;
+					prev_dest_lng = 0;
+					prev_dest_lat = 0;
+					end_dir_lat = 0;
+					end_dir_lng = 0;
 				}
-				// Reset variables		
-				inc_x = default_int;
-				inc_y = default_int;
-				stuck_old = 0;
-				stuck = 0;
-                x = inc_x;
-                y = inc_y;
-                m = 0;
-                found = 0;
-                curr_time = 0;
-				old_dist = 0;
-				old_time = 0;
-				prev_dest_lng = 0;
-				prev_dest_lat = 0;
-				end_dir_lat = 0;
-				end_dir_lng = 0;
-				console.log("Done!")
-            }                 
-        }else{
-			console.log("Google lock-out, retry ...")
-			//Retry
-			prev_dest_lat = prev_dest_lat;
-			prev_dest_lng = prev_dest_lng;
-			no_route = no_route + 1;
-			
-			if (no_route > 5) {
-				console.log("No route. Skipping.")
-				// Next slice
-				start_s = start_s + slice;
-				// Reset variables	
-				inc_x = default_int;
-				inc_y = default_int;
-				stuck_old = 0;
-				stuck = 0;
-				x = inc_x;
-				y = inc_y;
-				m = 0;
-				found = 0;
-				curr_time = 0;
-				old_dist = 0;
-				old_time = 0;
-				prev_dest_lng = 0;
-				prev_dest_lat = 0;
-				end_dir_lat = 0;
-				end_dir_lng = 0;
 			}
-		}
-
-		if(start_s > (2*Math.PI)-slice){
-		/////////////////////////
-		// Finished all slices///
-		/////////////////////////
-		
-		console.log("End. Creating Polygon.")
-		start_s = 0;
-
-		window['start_marker_' + global_count] = new google.maps.Marker({
-			id: global_count,
-			position: new google.maps.LatLng(start_lat,start_lng),
-			map: map,
-			icon: 'http://maps.google.com/mapfiles/ms/icons/green-dot.png'
+			if(start_s > (2*Math.PI)-slice){		
+				console.log("End. Creating Polygon.")
+				start_s = 0
+				window['start_marker_' + global_count] = new google.maps.Marker({
+					id: global_count,
+					position: new google.maps.LatLng(start_lat,start_lng),
+					map: map,
+					icon: 'http://maps.google.com/mapfiles/ms/icons/green-dot.png'
+				})
+				markers.push(window['start_marker_' + global_count])
+				// Clear directions
+				directionsDisplay.setMap()
+				clearInterval(intval)	
+				if (cut_string_i < curr_address.length-1) {
+					// Not finished with all addresses in array
+					cut_string_i++
+					drawisochrone(curr_address[cut_string_i],desired_mins)
+				} else {
+					// Finished with all
+					cut_string_i = 0
+					curr_address = []
+					document.getElementById("gen_button_red").value="Generate New (Red)"
+					document.getElementById("gen_button_blue").value="Generate New (Blue)"
+				}	
+			}
 		})
-		
-		markers.push(window['start_marker_' + global_count])
-		
-		// Clear directions
-		directionsDisplay.setMap()
-		clearInterval(intval)
-				
-		if (cut_string_i < curr_address.length-1) {
-			// Not finished with all addresses in array
-			cut_string_i++
-			drawisochrone(curr_address[cut_string_i],desired_mins)
-		} else {
-			// Finished with all
-			cut_string_i = 0
-			curr_address = []
-			document.getElementById("gen_button_red").value="Generate New (Red)"
-			document.getElementById("gen_button_blue").value="Generate New (Blue)"
-		}	
-		
-		}
-		});
     }
 	
 	// Create markers with listeners for drag-start + drag-end
@@ -443,11 +449,11 @@
 		}
 		if (temp_exist == 0) {
 			console.log('New point')
-			markers.push(marker);
-			points.push(new google.maps.LatLng(prev_dest_lat,prev_dest_lng));
+			markers.push(marker)
+			points.push(new google.maps.LatLng(prev_dest_lat,prev_dest_lng))
 		}
 		// Polygon	
-		window['polygon_' + marker.id].setMap(null);
+		window['polygon_' + marker.id].setMap(null)
 		window['polygon_' + marker.id] = new google.maps.Polygon({
             paths: points,
             strokeColor: POLYGON_COL,
@@ -570,22 +576,6 @@
 		document.getElementById("gen_button").value="Generate New Crow";
 		txtOutput.value += "End."
 	}
-	//Search Map for Address
-	function search(address) {
-		geocoder.geocode( { 'address': address}, function(results, status) { 
-				if (status == google.maps.GeocoderStatus.OK) { 
-					var loc = results[0].geometry.location;
-					//Pan to location
-					map.panTo(loc);
-					//Zoom to location
-					map.setZoom(16);
-				} 
-				else {
-					alert("Not found: " + status) 
-				} 
-			}
-		)
-	}
 
 </script>
 
@@ -614,12 +604,13 @@
 	onclick="search(document.getElementById('search_address').value);"/>
 
 	<div style="padding-top: 20px; padding-bottom: 20px;">
-<label for="metres">Metres (as the crow flies):</label>
-<input type="text" id="metres" name="metres" size="3" value="800"/>
-<input type="submit" id="gen_button" value="Generate New Crow"
+	
+	<label for="metres">Metres (as the crow flies):</label>
+	<input type="text" id="metres" name="metres" size="3" value="800"/>
+	<input type="submit" id="gen_button" value="Generate New Crow"
 	onclick="this.value='Generating (please wait...)';isochrone(document.getElementById('metres').value)"/>
-<div style="padding-top: 20px; padding-bottom: 20px;">
-<textarea id="txtOutput" style="width:80%; height: 200px"></textarea>
+	<div style="padding-top: 20px; padding-bottom: 20px;">
+	<textarea id="txtOutput" style="width:80%; height: 200px"></textarea>
 
   </center>
 </body>
