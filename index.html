@@ -55,7 +55,7 @@
 	
 	var MARKERS = XML.getElementsByTagName("marker")
 	var arr_markers = []
-	var CLUSTER_ZOOM = 12
+	var CLUSTER_ZOOM = 10
 	var POLYGON_COL = ""
 	//Custom formatting (default is grey)
 	var CUSTOM_SET = {
@@ -108,8 +108,10 @@
 	var cut_string_i = 0;
 	var altering_marker = 0;
 	var old_id = 0;
+	// 
+	var distance_array = [];
 	
-	// Initialise Map
+	// Initialise map with markers
     function initialize() {	
 		// Initialize around City, London
 		var my_lat = 51.518175
@@ -239,15 +241,15 @@
         y = (inc_y * Math.cos(start_s))
         m = m + 1
 		
-        var point      = new google.maps.Point(px,py);
-        var destpoint  = new google.maps.Point(px + x,py + y);  
-		var start = new google.maps.LatLng(point.x,point.y);
-		var end = new google.maps.LatLng(destpoint.x,destpoint.y);
+        var point      = new google.maps.Point(px,py)
+        var destpoint  = new google.maps.Point(px + x,py + y)
+		var start = new google.maps.LatLng(point.x,point.y)
+		var end = new google.maps.LatLng(destpoint.x,destpoint.y)
 			
 		// After initial push; follow directions service rather than ray 
 		if (m > 3) {
 			end = new google.maps.LatLng(prev_dest_lat + (inc_x * Math.sin(start_s)),
-				prev_dest_lng + (inc_y * Math.cos(start_s)));
+				prev_dest_lng + (inc_y * Math.cos(start_s)))
 			console.log("Switching to direction route: " + prev_dest_lat + (inc_x * Math.sin(start_s)) + ", " +
 				prev_dest_lng + (inc_y * Math.cos(start_s)))
 		}
@@ -255,7 +257,7 @@
 		if (stuck > stuck_old) {
 			// Push out if stuck
 			end = new google.maps.LatLng(prev_dest_lat + ((default_int*3) * Math.sin(start_s)),
-				prev_dest_lng + ((default_int*3) * Math.cos(start_s)));
+				prev_dest_lng + ((default_int*3) * Math.cos(start_s)))
 		}
 		
 		var request = {
@@ -461,10 +463,10 @@
             fillColor: POLYGON_COL,
             fillOpacity: 0.2
 		})
-		window['polygon_' + marker.id].setMap(map);
+		window['polygon_' + marker.id].setMap(map)
 		// Add listener for drag-start
 		google.maps.event.addListener(marker, 'dragstart',function(){
-			startDrag = this.getPosition();
+			startDrag = this.getPosition()
 		})
 		// Add listener for drag-end
 		google.maps.event.addListener(marker, 'dragend', function() {
@@ -474,8 +476,8 @@
 			points = window['points_' + old_id];
 			// Choose correct start-marker
 			// Initialise directions
-			directionsDisplay.setMap();
-			directionsDisplay.setMap(map);
+			directionsDisplay.setMap()
+			directionsDisplay.setMap(map)
 			
 			var request = { 
 				origin: window['start_marker_' + old_id].getPosition(), 
@@ -526,10 +528,9 @@
 		return marker
 	}
 	
-	function isochrone(radius) {
-		var cluster_array = [];
-		var num_radius = parseFloat(radius);
-		txtOutput.value += "\nStart.\n";
+	function isochrone() {
+		var num_radius = parseFloat(document.getElementById('metres').value)
+		txtOutput.value += "Start.\n";
 		// Loop across all MARKERS in XML dump
 		for (var i = 0; i < MARKERS.length; i++) {
 			var name = MARKERS[i].getAttribute("name")	
@@ -545,22 +546,22 @@
 					for (var j = 0; j < MARKERS.length; j++) {	
 						if (j != i) {
 							var name_j = MARKERS[j].getAttribute("name")		
-								var point_j = new google.maps.LatLng(
-										parseFloat(MARKERS[j].getAttribute("lat")),
-										parseFloat(MARKERS[j].getAttribute("lng")));		
-								var distance_between = google.maps.geometry.spherical.computeDistanceBetween(point_i, point_j)							
-									if (distance_between <= num_radius) {	
-										if(names_array.indexOf(name_j) == -1) {
-											names_array.push(name_j)
-										}
+							var point_j = new google.maps.LatLng(
+								parseFloat(MARKERS[j].getAttribute("lat")),
+								parseFloat(MARKERS[j].getAttribute("lng"))
+							)	
+							var distance_between = google.maps.geometry.spherical.computeDistanceBetween(point_i, point_j)							
+								if (distance_between <= num_radius) {	
+									if(names_array.indexOf(name_j) == -1) {
+										names_array.push(name_j)
 									}
+								}
 						}
 					}
-
 					//Output
 					var counter = names_array.length
-					var overlaps = names_array.toString();
-					txtOutput.value += "Marker: " + name + ", Address: " + address + ", Overlaps: " + counter + ", List: " + overlaps + ", Radius(m): " + num_radius + ".\n";
+					var overlaps = names_array.toString()
+					txtOutput.value += "Marker: " + name + ", Address: " + address + ", Overlaps: " + counter + ", List: " + overlaps + ", Radius(m): " + num_radius + ".\n"
 					//Draw radius
 					var draw_circle = new google.maps.Circle({
 							center: point_i,
@@ -574,102 +575,111 @@
 					})		
 			}
 		document.getElementById("gen_button").value="Generate New Crow";
-		txtOutput.value += "End."
+		txtOutput.value += "End.\n"
 	}
 
-	function calculate_distances(radius) {
-		//1. Create array of markers which are within (num_radius) of each other
-		var cluster_array = [];
-		var num_radius = parseFloat(radius);
-		var k = 0;
-		for (var i = 0; i < MARKERS.length-1; i++) {
-			var id = MARKERS[i].getAttribute("id")	
-			var point_i = new google.maps.LatLng(
-				parseFloat(MARKERS[i].getAttribute("lat")),
-				parseFloat(MARKERS[i].getAttribute("lng")));	
-					//Calculate overlaps (need to cross with every other marker)	
-					for (var j = i+1; j < MARKERS.length; j++) {	
-							var id_j = MARKERS[j].getAttribute("id")		
-							var point_j = new google.maps.LatLng(
-									parseFloat(MARKERS[j].getAttribute("lat")),
-									parseFloat(MARKERS[j].getAttribute("lng")));		
-							var distance_between = google.maps.geometry.spherical.computeDistanceBetween(point_i, point_j)							
-									if (distance_between <= num_radius) {	
-										cluster_array[k] = {
-											0: id,
-											1: id_j
-										};
-									k ++
-									}
+	function calculate_distances() {
+		if (typeof distance_array !== 'undefined' && distance_array.length > 0) {
+			console.log('Distance array already created')
+		} else {
+			console.log('Creating distance array')
+			distance_array = []
+			var k = 0;
+			for (var i = 0; i < MARKERS.length-1; i++) {
+				var id = MARKERS[i].getAttribute("id")	
+				var point_i = new google.maps.LatLng(
+					parseFloat(MARKERS[i].getAttribute("lat")),
+					parseFloat(MARKERS[i].getAttribute("lng")));	
+						for (var j = i+1; j < MARKERS.length; j++) {	
+								var id_j = MARKERS[j].getAttribute("id")		
+								var point_j = new google.maps.LatLng(
+										parseFloat(MARKERS[j].getAttribute("lat")),
+										parseFloat(MARKERS[j].getAttribute("lng")))	
+								var distance_between = google.maps.geometry.spherical.computeDistanceBetween(point_i, point_j)							
+											distance_array[k] = {
+												0: id,
+												1: id_j,
+												2: distance_between
+											}
+										k ++
+						}
+			}	
+		}
+		//Keep distances within threshold
+		trim_distances(distance_array)
+	}
+	
+	function trim_distances(distance_array) {
+		var num_radius = parseFloat(document.getElementById('metres').value)
+		var k = 0
+		var cluster_array = []
+		for (var i = 0; i < distance_array.length; i++) {
+					if (distance_array[i][2] <= num_radius) {
+						cluster_array[k] = {
+							0: distance_array[i][0],
+							1: distance_array[i][1]
+						}
+						k ++
 					}
-		}	
+		}
 		//Cluster the markers
 		the_clusterer(cluster_array, num_radius)
 	}
 	
 	function the_clusterer(cluster_array, num_radius){
-	for (var i = 0; i < cluster_array.length - 1; i ++) {
-			if (typeof(cluster_array[i])!='undefined'){
-			var size_outer = 0, key_outer;
-			for (key_outer in cluster_array[i]) {if (cluster_array[i].hasOwnProperty(key_outer));size_outer++;}
-					for (var j = 0; j < size_outer; j ++) {
-						console.log("Searching for: " + cluster_array[i][j])						
-						for (var k = i + 1; k < cluster_array.length; k ++) {
-								if (typeof(cluster_array[i])!='undefined') {
-								var size_inner = 0, key_inner;
-								for (key_inner in cluster_array[k]) {if (cluster_array[k].hasOwnProperty(key_inner));size_inner++;} 
-									var found_outer = 0
-									for (var l = 0; l < size_inner; l ++) {
-										console.log("Checking " + cluster_array[k][l] + ", for match")
-										if (cluster_array[k][l] == cluster_array[i][j]) {
-											console.log("Found match in row: " + k + ", column: " + l + ", as: " + cluster_array[k][l])
-											found_outer ++
-										}
-									}
-									if (found_outer > 0) {
-										console.log("Add to existing array")
-										for (var l = 0; l < size_inner; l ++) {
-											//Loop through all entries to check it is new
-											var found_inner = 0
-											for (var m = 0; m < size_outer; m++) {
-												if (cluster_array[i][m] == cluster_array[k][l]) {
-												found_inner ++
-												}
-											 }
-											if (found_inner == 0) {
-											console.log(cluster_array[k][l] + ", does not currently exist")
-												cluster_array[i][size_outer] = cluster_array[k][l]
-												console.log("Added: " + cluster_array[i][size_outer] +", as entry: " + [size_outer] )
-												size_outer ++
-											}
-										}
-										console.log("Deleting original entry")
-										delete cluster_array[k];
-									} else {
-										console.log("Not found")
-									}		
-							}
-						}
-					}	
-			}	
-		}
-		
-		//Output results to text-box
-		console.log(cluster_array)
-		txtOutput.value += "\nStart Clusters: " + num_radius + "m.\n"
-		var k = 0
+		console.log('Clustering distance array')
 		for (var i = 0; i < cluster_array.length - 1; i ++) {
-			var size_outer = 0, key_outer;
-			for (key_outer in cluster_array[i]) {if (cluster_array[i].hasOwnProperty(key_outer));size_outer++;}
-			if (size_outer > 0) {
-				k ++
-				var temp_line = "Cluster " + k + ":"
-					for (var j = 0; j < size_outer; j ++) {
-							temp_line = temp_line + " Marker " + cluster_array[i][j]
-					}
-			txtOutput.value += temp_line + ".\n"
+				if (typeof(cluster_array[i])!='undefined'){
+					var size_outer = 0, key_outer;
+					for (key_outer in cluster_array[i]) {if (cluster_array[i].hasOwnProperty(key_outer));size_outer++;}
+							for (var j = 0; j < size_outer; j ++) {					
+								for (var k = i + 1; k < cluster_array.length; k ++) {
+										if (typeof(cluster_array[i])!='undefined') {
+											var size_inner = 0, key_inner;
+											for (key_inner in cluster_array[k]) {if (cluster_array[k].hasOwnProperty(key_inner));size_inner++;} 
+												var found_outer = 0
+												for (var l = 0; l < size_inner; l ++) {
+													if (found_outer === 1) { 
+														break;
+													}
+													if (cluster_array[k][l] == cluster_array[i][j]) {
+														found_outer ++
+													}
+												}
+												if (found_outer > 0) {
+													for (var l = 0; l < size_inner; l ++) {
+														var found_inner = 0
+														for (var m = 0; m < size_outer; m++) {
+															if (cluster_array[i][m] == cluster_array[k][l]) {
+															found_inner ++
+															}
+														 }
+														if (found_inner == 0) {
+															cluster_array[i][size_outer] = cluster_array[k][l]
+															size_outer ++
+														}
+													}
+													delete cluster_array[k];
+												} 		
+									}
+								}
+							}	
+				}	
 			}
-		}
+			txtOutput.value += "Start Clusters: " + num_radius + "m.\n"
+			var k = 0
+			for (var i = 0; i < cluster_array.length - 1; i ++) {
+				var size_outer = 0, key_outer;
+				for (key_outer in cluster_array[i]) {if (cluster_array[i].hasOwnProperty(key_outer));size_outer++;}
+				if (size_outer > 0) {
+					k ++
+					var temp_line = "Cluster " + k + ":"
+						for (var j = 0; j < size_outer; j ++) {
+								temp_line = temp_line + " Marker " + cluster_array[i][j]
+						}
+				txtOutput.value += temp_line + ".\n"
+				}
+			}
 	}
 	
 </script>
@@ -703,9 +713,9 @@
 	<label for="metres">Metres (as the crow flies):</label>
 	<input type="text" id="metres" name="metres" size="3" value="800"/>
 	<input type="submit" id="gen_button" value="Generate Crow Overlaps"
-	onclick="this.value='Generating (please wait...)';isochrone(document.getElementById('metres').value)"/>
+	onclick="this.value='Generating (please wait...)';isochrone()"/>
 	<input type="submit" id="temp_cluster" value="Generate Crow Agglomerative Hierarchical Clusters"
-	onclick="calculate_distances(document.getElementById('metres').value)"/>
+	onclick="calculate_distances()"/>
 	<div style="padding-top: 20px; padding-bottom: 20px;">
 	<label for="txtOutput">Crow Flies Overlaps:</label>
 	<div style="padding-top: 20px; padding-bottom: 20px;">
