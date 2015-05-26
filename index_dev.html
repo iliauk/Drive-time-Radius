@@ -44,8 +44,7 @@
 <script src="http://google-maps-utility-library-v3.googlecode.com/svn/trunk/markerclusterer/src/markerclusterer.js"></script>
 <script src="http://google-maps-utility-library-v3.googlecode.com/svn/tags/markerwithlabel/1.1.9/src/markerwithlabel.js"></script>
 <script src="http://rawgit.com/iliauk/Drive-time-Radius/master/sha.js"></script>
-
-<script src="file:///O:/ikarmanov/TravelTimeKeyV1.js"></script>
+<script src="\\cra.int.\data\London\OpenAccess\ikarmanov\TravelTimeKeyV1.js"></script>
 
 <script type="text/javascript">
 
@@ -286,7 +285,7 @@
 
 	            map.setCenter(point[0].geometry.location)
 	            intval = setInterval("crawldirections(" + source_lat + "," +
-	                source_lng + "," + minutes + ")", 300);
+	                source_lng + "," + minutes + ")", 250);
 	        } else {
 	            alert("Geocode was not successful for the following reason: " + status)
 	                // Continue with remaining
@@ -373,81 +372,79 @@
 				flightPath.setMap(map);
 				
 				if (distance_status == "OK") {
-				 console.log("Current min: " + curr_time + ", prev min: " + old_time + ", target: " + mins)
-	            // Straddle the point
-	            if (old_time <= mins && curr_time > mins) {
-	                found = 1;
-	            } else {
-	                // Dynamically adjust speed
-	                if (curr_time < (0.70 * mins)) {
-	                    inc_x = (default_int * 2);
-	                    inc_y = (default_int * 2);
-	                } else {
-	                    inc_x = default_int;
-	                    inc_y = default_int;
-	                }
-	                // Set current end coordinates as previous
-	                // If stuck, push forward:
-	                if ((curr_time == old_time) && (curr_dist == old_dist)) {
-	                    console.log("Stuck, pushing forward")
-	                    stuck_old = stuck
-	                    stuck = stuck + 1
-	                }
-	                // Set current end coordinates as previous
-	                prev_dest_lat = end_dir_lat
-	                prev_dest_lng = end_dir_lng
-	                    // Set current distance and time as previous
-	                old_dist = curr_dist
-	                old_time = curr_time
-	            }
-
-	            if (found == 1 || stuck > 5) {
-	                console.log(start_s)
-	                    // Use point that is closer to the target
-	                if ((mins - old_time) > (curr_time - mins)) {
-	                    // Use new if closer
-	                    prev_dest_lat = end_dir_lat
-	                    prev_dest_lng = end_dir_lng
-	                    old_time = curr_time
-	                    old_dist = curr_dist
-	                }
-	                // Place marker
-	                console.log("Found! " + old_time + ". Placing marker")
-	                    // Icon depending on match type
-	                if (old_time - mins > 1) {
-	                    var marker = createMarker(prev_dest_lat, prev_dest_lng, map, old_time, old_dist, "High");
-	                } else if (mins - old_time > 1) {
-	                    var marker = createMarker(prev_dest_lat, prev_dest_lng, map, old_time, old_dist, "Low");
-	                } else {
-	                    var marker = createMarker(prev_dest_lat, prev_dest_lng, map, old_time, old_dist, "Good");
-	                }
-	                if (stuck > 3) {
-	                    // Push out a bit further
-	                    start_s = start_s + (2 * slice)
-	                } else {
-	                    // Next slice
-	                    start_s = start_s + slice;
-	                }
-	                // Reset variables		
-	                inc_x = default_int;
-	                inc_y = default_int;
-	                stuck_old = 0;
-	                stuck = 0;
-	                x = inc_x;
-	                y = inc_y;
-	                m = 0;
-	                found = 0;
-	                curr_time = 0;
-	                old_dist = 0;
-	                old_time = 0;
-	                prev_dest_lng = 0;
-	                prev_dest_lat = 0;
-	                end_dir_lat = 0;
-	                end_dir_lng = 0;
-	                console.log("Done!")
-	            }
-	        
-			// If NO DIRECTIONS returned
+					console.log("Current min: " + curr_time + ", prev min: " + old_time + ", target: " + mins)
+					// Straddle the point
+					if (old_time <= mins && curr_time > mins) {
+						found = 1;
+					} else {
+						// Dynamically adjust speed
+						if (curr_time < (0.70 * mins)) {
+							inc_x = (default_int * 2);
+							inc_y = (default_int * 2);
+						} else {
+							inc_x = default_int;
+							inc_y = default_int;
+						}
+						// Set current end coordinates as previous
+						// If stuck, push forward:
+						if ((curr_time == old_time) && (curr_dist == old_dist)) {
+							console.log("Stuck, pushing forward")
+							stuck_old = stuck
+							stuck = stuck + 1
+						}
+						// Set current end coordinates as previous
+						prev_dest_lat = end_dir_lat
+						prev_dest_lng = end_dir_lng
+							// Set current distance and time as previous
+						old_dist = curr_dist
+						old_time = curr_time
+					}
+						if (found == 1 || stuck > 5) {
+							console.log(start_s)
+								// Use point that is closer to the target
+							if ((mins - old_time) > (curr_time - mins)) {
+								// Use new if closer
+								prev_dest_lat = end_dir_lat
+								prev_dest_lng = end_dir_lng
+								old_time = curr_time
+								old_dist = curr_dist
+							}
+							// Place marker
+							console.log("Found! " + old_time + ". Placing marker")
+								// Icon depending on match type
+							if (old_time - mins > 1) {
+								var marker = createMarker(prev_dest_lat, prev_dest_lng, map, old_time, old_dist, "High");
+							} else if (mins - old_time > 1) {
+								var marker = createMarker(prev_dest_lat, prev_dest_lng, map, old_time, old_dist, "Low");
+							} else {
+								var marker = createMarker(prev_dest_lat, prev_dest_lng, map, old_time, old_dist, "Good");
+							}
+							if (stuck > 3) {
+								// Push out a bit further
+								start_s = start_s + (2 * slice)
+							} else {
+								// Next slice
+								start_s = start_s + slice;
+							}
+							// Reset variables		
+							inc_x = default_int;
+							inc_y = default_int;
+							stuck_old = 0;
+							stuck = 0;
+							x = inc_x;
+							y = inc_y;
+							m = 0;
+							found = 0;
+							curr_time = 0;
+							old_dist = 0;
+							old_time = 0;
+							prev_dest_lng = 0;
+							prev_dest_lat = 0;
+							end_dir_lat = 0;
+							end_dir_lng = 0;
+							console.log("Done!")
+						}
+				// If NO DIRECTIONS returned
 			} else {
 	            console.log("Google lock-out, retry ...")
 	                //Retry
