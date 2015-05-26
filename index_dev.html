@@ -43,19 +43,21 @@
 <script src="http://maps.googleapis.com/maps/api/js?&sensor=false&libraries=geometry"></script>
 <script src="http://google-maps-utility-library-v3.googlecode.com/svn/trunk/markerclusterer/src/markerclusterer.js"></script>
 <script src="http://google-maps-utility-library-v3.googlecode.com/svn/tags/markerwithlabel/1.1.9/src/markerwithlabel.js"></script>
+
+<script src="//sha.js"></script>
+<script src="file:///O:/ikarmanov/TravelTimeKeyV1.js"></script>
+
 <script type="text/javascript">
 
-		//GLOBALS
-	var XML = document.getElementById("myxml")
+	//1. MAP
+	var XML = document.getElementById("myxml");
 
 	if (XML.documentElement == null)
-	    XML.documentElement = XML.firstChild
+	    XML.documentElement = XML.firstChild;
 
-	var MARKERS = XML.getElementsByTagName("marker")
-	var arr_markers = []
-	var CLUSTER_ZOOM = 10
-	var POLYGON_COL = ""
-	    //Custom formatting (default is grey)
+	var MARKERS = XML.getElementsByTagName("marker");
+	var arr_markers = [];
+	var CLUSTER_ZOOM = 10;
 	var CUSTOM_SET = {
 	    'SOHO GYM': {
 	        icon: 'http://labs.google.com/ridefinder/images/mm_20_blue.png',
@@ -67,23 +69,23 @@
 	        color: "#FF0000",
 			strokeColor: "#FF0000"
 	    }
-	};
-	var TRAVEL_MODE = google.maps.TravelMode.DRIVING
-	    //var TRAVEL_MODE = google.maps.TravelMode.WALKING
-	    // Number of points
-	var num_points = 20
+	}
+	//2. ISOCHRONE
+	var POLYGON_COL = "";
+	var TRAVEL_MODE = google.maps.TravelMode.DRIVING;
+	//var TRAVEL_MODE = google.maps.TravelMode.WALKING;
+	var num_points = 20;
 	var default_int = 0;
 	var inc_x = 0;
 	var inc_y = 0;
 	var x = 0;
 	var y = 0;
-	// Stuck
 	var stuck = 0;
 	var stuck_old = 0;
 	var map = null;
-	var geocoder = new google.maps.Geocoder()
-	var directionsDisplay = new google.maps.DirectionsRenderer()
-	var directionsService = new google.maps.DirectionsService()
+	var geocoder = new google.maps.Geocoder();
+	var directionsDisplay = new google.maps.DirectionsRenderer();
+	var directionsService = new google.maps.DirectionsService();
 	var global_count = 0;
 	var points = [];
 	var polygon = new google.maps.Polygon;
@@ -96,7 +98,6 @@
 	var slice = (2 * Math.PI) / num_points;
 	var start_s = 0;
 	var found = 0;
-	// Save previous results
 	var prev_dest_lat = 0;
 	var prev_dest_lng = 0;
 	var old_dist = 0;
@@ -108,7 +109,18 @@
 	var cut_string_i = 0;
 	var altering_marker = 0;
 	var old_id = 0;
-	// 
+	
+	//2.5 Using Google distance API
+	var flightPath = new google.maps.Polyline;
+	var distance_status;
+	var origin;
+	var destination;
+	var curr_time;
+	var curr_dist;
+	var end_dir_lat;
+	var end_dir_lng;
+	
+	//3. RADIUS
 	var distance_array = [];
 
 	// Initialise map with markers
@@ -137,7 +149,7 @@
 					map: map,
 					position: point_i,
 					labelInBackground: true,
-					labelContent: "ID:" + id + ", " + name,
+					labelContent: "ID:" + id + "\n" + name,
 					labelAnchor: new google.maps.Point(50, 0),
 					labelClass: "labels", // the CSS class for the label
 					labelStyle: {
@@ -148,7 +160,6 @@
 				bounds.extend(point_i)
 				arr_markers.push(marker)
 			
-			
 			//Path Home: 51.517164, -0.076794		
 			var flightPlanCoordinates = [
 				new google.maps.LatLng(parseFloat(MARKERS[i].getAttribute("lat")),parseFloat(MARKERS[i].getAttribute("lng"))),
@@ -158,10 +169,16 @@
 			var strokeColor = CUSTOM_SET[name] || {
 	            strokeColor: '#808080'
 	        }
-			
+			var lineSymbol = {
+				path: google.maps.SymbolPath.FORWARD_CLOSED_ARROW
+			};
 			var flightPath = new google.maps.Polyline({
 				path: flightPlanCoordinates,
 				geodesic: true,
+				    icons: [{
+						icon: lineSymbol,
+					offset: '50%'
+					}],
 				strokeColor: strokeColor.strokeColor,
 				strokeOpacity: 1.0,
 				strokeWeight: 2
@@ -174,7 +191,7 @@
 	    })
 	    map.fitBounds(bounds)
 	}
-
+	
 	//Search Map for Address
 	function search(address) {
 	    geocoder.geocode({
@@ -189,9 +206,31 @@
 	        } else {
 	            alert("Not found: " + status)
 	        }
-	    })
+	    })	
 	}
-
+	
+	//Sign Google's Cryptographic Key
+	function google_key_signer(url, key) {
+		cut_url = url.replace('http://maps.googleapis.com','');
+		key = key.replace('-', '+');
+		key = key.replace('_', '/'); 
+		
+		var hmacObj = new jsSHA(cut_url, 'TEXT');
+		var hmacOutput = hmacObj.getHMAC(key,'B64','SHA-1','B64');
+		
+		hmacOutput = hmacOutput.split('+').join('-');
+		hmacOutput = hmacOutput.split('/').join('_');
+		
+		return url + '&signature=' + hmacOutput;
+	}
+	
+	//Encode URL for proxy
+	function proxyUrlJsonp(url) {
+			var encodedUrl = encodeURIComponent(url);
+			var proxyUrl = encodedUrl;
+		return proxyUrl;
+	}
+	
 	// Clear: Leave only Polygons
 	function clear_map() {
 	    directionsDisplay.setMap()
@@ -239,7 +278,7 @@
 
 	            // Sensitivity (increment)
 	            // 6000 after trial-and-error parameter testing
-	            default_int = minutes / 10000
+	            default_int = minutes / 6000
 	            inc_x = default_int
 	            inc_y = default_int
 	            x = default_int
@@ -247,7 +286,7 @@
 
 	            map.setCenter(point[0].geometry.location)
 	            intval = setInterval("crawldirections(" + source_lat + "," +
-	                source_lng + "," + minutes + ")", 1000);
+	                source_lng + "," + minutes + ")", 300);
 	        } else {
 	            alert("Geocode was not successful for the following reason: " + status)
 	                // Continue with remaining
@@ -290,30 +329,51 @@
 	            prev_dest_lng + ((default_int * 3) * Math.cos(start_s)))
 	    }
 
-	    var request = {
-	        origin: start,
-	        destination: end,
-	        travelMode: TRAVEL_MODE
-	    }
+		//Call Directions API function
+		origin = start.lat() + "," + start.lng();
+		destination = end.lat() + "," + end.lng();
+		
+		console.log ("origin: " + origin)
+		console.log ("dest: " + destination)
+		
+		//Directions (taken out of function)
+		var signed_url = google_key_signer(encodeURI('http://maps.googleapis.com/maps/api/directions/json?' + 
+		('origin=' + origin + '&destination=' + destination) + 
+		'&client=' + CRA_NAME),
+		CRA_KEY 
+		);
+		
+		console.log(signed_url);
+		
+		$.getJSON('https://jsonp.afeld.me/?callback=?&url=' + proxyUrlJsonp(signed_url),
+			function(data){ 
 
-	    directionsService.route(request, function(response, status) {
-	        console.log(status)
-	        if (status == google.maps.DirectionsStatus.OK) {
-	            no_route = 0
-	                // Display directions on screen
-	            directionsDisplay.setOptions({
-	                preserveViewport: true
-	            })
-	            directionsDisplay.setDirections(response)
+				var temp_json = data.routes[0].legs[0]
+								
+				curr_time = (temp_json.duration.value / 60).toFixed(1)
+	            curr_dist = (temp_json.distance.value / 1000 / 1.609344).toFixed(1)
+	            end_dir_lat = parseFloat(temp_json.end_location.lat)
+	            end_dir_lng = parseFloat(temp_json.end_location.lng)
+	            start_lat = parseFloat(temp_json.start_location.lat)
+	            start_lng = parseFloat(temp_json.start_location.lng)	
+				distance_status = data.status
+				
+				console.log("Status: " + distance_status)
+				
+				//Draw polyline
+				flightPath.setMap(null);
+				var distance_path = [temp_json.start_location, temp_json.end_location];
+				flightPath = new google.maps.Polyline({
+					path: distance_path,
+					strokeColor: '#808080',
+					strokeOpacity: 1.0,
+					strokeWeight: 4
+				});
 
-	            var curr_time = (response.routes[0].legs[0].duration.value / 60).toFixed(1)
-	            var curr_dist = (response.routes[0].legs[0].distance.value / 1000 / 1.609344).toFixed(1)
-	            var end_dir_lat = response.routes[0].legs[0].end_location.lat()
-	            var end_dir_lng = response.routes[0].legs[0].end_location.lng()
-	            var start_lat = response.routes[0].legs[0].start_location.lat()
-	            var start_lng = response.routes[0].legs[0].start_location.lng()
-	            console.log("Current min: " + curr_time + ", prev min: " + old_time + ", target: " + mins)
-
+				flightPath.setMap(map);
+				
+				if (distance_status == "OK") {
+				 console.log("Current min: " + curr_time + ", prev min: " + old_time + ", target: " + mins)
 	            // Straddle the point
 	            if (old_time <= mins && curr_time > mins) {
 	                found = 1;
@@ -341,7 +401,7 @@
 	                old_time = curr_time
 	            }
 
-	            if (found == 1 || stuck > 3) {
+	            if (found == 1 || stuck > 5) {
 	                console.log(start_s)
 	                    // Use point that is closer to the target
 	                if ((mins - old_time) > (curr_time - mins)) {
@@ -386,7 +446,9 @@
 	                end_dir_lng = 0;
 	                console.log("Done!")
 	            }
-	        } else {
+	        
+			// If NO DIRECTIONS returned
+			} else {
 	            console.log("Google lock-out, retry ...")
 	                //Retry
 	            prev_dest_lat = prev_dest_lat;
@@ -415,9 +477,11 @@
 	                end_dir_lng = 0;
 	            }
 	        }
+			
 	        if (start_s > (2 * Math.PI) - slice) {
 	            console.log("End. Creating Polygon.")
 	            start_s = 0
+				flightPath.setMap(null);
 	            window['start_marker_' + global_count] = new google.maps.Marker({
 	                id: global_count,
 	                position: new google.maps.LatLng(start_lat, start_lng),
@@ -426,7 +490,7 @@
 	            })
 	            markers.push(window['start_marker_' + global_count])
 	                // Clear directions
-	            directionsDisplay.setMap()
+	            //directionsDisplay.setMap()
 	            clearInterval(intval)
 	            if (cut_string_i < curr_address.length - 1) {
 	                // Not finished with all addresses in array
@@ -440,7 +504,38 @@
 	                document.getElementById("gen_button_blue").value = "Generate New (Blue)"
 	            }
 	        }
-	    })
+				
+			});
+	
+		/*
+	    var request = {
+	        origin: start,
+	        destination: end,
+	        travelMode: TRAVEL_MODE
+	    }
+
+	    //directionsService.route(request, function(response, status) {
+	        console.log(status)
+	        if (status == google.maps.DirectionsStatus.OK) {
+	            no_route = 0
+	                // Display directions on screen
+	            directionsDisplay.setOptions({
+	                preserveViewport: true
+	            })
+	            directionsDisplay.setDirections(response)
+
+	            var curr_time = (response.routes[0].legs[0].duration.value / 60).toFixed(1)
+	            var curr_dist = (response.routes[0].legs[0].distance.value / 1000 / 1.609344).toFixed(1)
+	            var end_dir_lat = response.routes[0].legs[0].end_location.lat()
+	            var end_dir_lng = response.routes[0].legs[0].end_location.lng()
+	            var start_lat = response.routes[0].legs[0].start_location.lat()
+	            var start_lng = response.routes[0].legs[0].start_location.lng()
+	            console.log("Current min: " + curr_time + ", prev min: " + old_time + ", target: " + mins)
+				*/
+				
+	
+		
+	    //})
 	}
 
 	// Create markers with listeners for drag-start + drag-end
@@ -732,6 +827,7 @@
 <body style="margin:0px; padding:0px; background: #FFFFFF;" onload="initialize()">
   <center>
      <div style="padding-top: 20px; padding-bottom: 20px;">
+		<button id="readFile">Read File</button>
           <label for="geolocation"/>Location(s):   </label>
           <input type="text" id="geolocation" name="geolocation" size="60" value="Hyde Park, London"/>
           <label for="minutes">     Minutes:    </label>
