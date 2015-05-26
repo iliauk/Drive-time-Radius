@@ -230,6 +230,12 @@
 		return proxyUrl;
 	}
 	
+	//
+	function craauthorise(id,key) {
+		CRA_NAME = id
+		CRA_KEY = key
+		alert("Success")	
+	}
 	// Clear: Leave only Polygons
 	function clear_map() {
 	    directionsDisplay.setMap()
@@ -830,6 +836,15 @@
 	<label for="txtOutput">Crow Flies Overlaps:</label>
 	<div style="padding-top: 20px; padding-bottom: 20px;">
 	<textarea id="txtOutput" style="width:80%; height: 200px"></textarea>
+	
+	<div style="padding-top: 20px; padding-bottom: 20px;">
+
+	<label for="metres">Manual Authorisation:</label>
+	<input type="text" id="craid" value=""/>
+	<input type="text" id="crakey" value=""/>
+	<input type="submit" id="craauthorise" value="Authorise"
+		onclick="craauthorise(document.getElementById('craid').value,document.getElementById('crakey').value);"/>
+	
   </center>
 </body>
 </html>
