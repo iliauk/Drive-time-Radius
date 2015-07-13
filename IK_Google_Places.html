@@ -95,6 +95,7 @@ function initialize() {
     // For each place, get the icon, place name, and location.
 	txtOutput.value = ""
     markers = [];
+	txtOutput.value = "";
     var bounds = new google.maps.LatLngBounds();
     for (var i = 0, place; place = places[i]; i++) {
 	console.log(place)
