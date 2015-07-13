@@ -73,7 +73,7 @@
 	var POLYGON_COL = "";
 	var TRAVEL_MODE = google.maps.TravelMode.DRIVING;
 	//var TRAVEL_MODE = google.maps.TravelMode.WALKING;
-	var num_points = 50;
+	var num_points = 30;
 	var default_int = 0;
 	var inc_x = 0;
 	var inc_y = 0;
@@ -210,6 +210,8 @@
 	
 	//Sign Google's Cryptographic Key
 	function google_key_signer(url, key) {
+		console.log(url)
+		console.log(key)
 		cut_url = url.replace('http://maps.googleapis.com','');
 		key = key.replace('-', '+');
 		key = key.replace('_', '/'); 
@@ -291,7 +293,7 @@
 
 	            map.setCenter(point[0].geometry.location)
 	            intval = setInterval("crawldirections(" + source_lat + "," +
-	                source_lng + "," + minutes + ")", 300);
+	                source_lng + "," + minutes + ")", 250);
 	        } else {
 	            alert("Geocode was not successful for the following reason: " + status)
 	                // Continue with remaining
@@ -313,20 +315,11 @@
 	    desired_mins = mins
 	    x = (inc_x * Math.sin(start_s))
 	    y = (inc_y * Math.cos(start_s))
-	    m = m + 1
 
 	    var point = new google.maps.Point(px, py)
 	    var destpoint = new google.maps.Point(px + x, py + y)
 	    var start = new google.maps.LatLng(point.x, point.y)
 	    var end = new google.maps.LatLng(destpoint.x, destpoint.y)
-
-	    // After initial push; follow directions service rather than ray 
-	    if (m > 3) {
-	        end = new google.maps.LatLng(prev_dest_lat + (inc_x * Math.sin(start_s)),
-	            prev_dest_lng + (inc_y * Math.cos(start_s)))
-	        console.log("Switching to direction route: " + prev_dest_lat + (inc_x * Math.sin(start_s)) + ", " +
-	            prev_dest_lng + (inc_y * Math.cos(start_s)))
-	    }
 
 	    if (stuck > stuck_old) {
 	        // Push out if stuck
@@ -380,13 +373,13 @@
 				if (distance_status == "OK") {
 					console.log("Current min: " + curr_time + ", prev min: " + old_time + ", target: " + mins)
 					// Straddle the point
-					if (old_time <= mins && curr_time > mins) {
+					if ((curr_time > mins) && (old_time != 0)) {
 						found = 1;
 					} else {
 						// Dynamically adjust speed
 						if (curr_time < (0.70 * mins)) {
-							inc_x = (default_int * 2);
-							inc_y = (default_int * 2);
+							inc_x = (default_int * 1);
+							inc_y = (default_int * 1);
 						} else {
 							inc_x = (default_int * 0.2);
 							inc_y = (default_int * 0.2);
@@ -405,7 +398,7 @@
 						old_dist = curr_dist
 						old_time = curr_time
 					}
-						if (found == 1 || stuck > 5) {
+						if (found == 1 || stuck > 3) {
 							console.log(start_s)
 								// Use point that is closer to the target
 							if ((mins - old_time) > (curr_time - mins)) {
@@ -442,7 +435,6 @@
 							stuck = 0;
 							x = inc_x;
 							y = inc_y;
-							m = 0;
 							found = 0;
 							curr_dist = 0;
 							curr_time = 0;
@@ -473,7 +465,6 @@
 	                stuck = 0;
 	                x = inc_x;
 	                y = inc_y;
-	                m = 0;
 	                found = 0;
 	                curr_time = 0;
 	                old_dist = 0;
